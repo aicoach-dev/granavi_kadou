@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>稼働管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Meiryo', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        /* ── ヘッダー ── */
+        .header {
+            background-color: #1e293b;
+            color: white;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .team-filter {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 0.375rem;
+            background-color: #0f172a;
+            color: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+            min-width: 130px;
+        }
+
+        .team-filter:hover {
+            background-color: #334155;
+        }
+
+        .add-member-btn {
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .add-member-btn:hover {
+            background-color: #2563eb;
+        }
+
+        /* ── メインコンテンツ ── */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .summary-line {
+            margin-bottom: 0.875rem;
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+
+        /* ── テーブル ── */
+        .table-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #f1f5f9;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        th {
+            padding: 0.625rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        th.center {
+            text-align: center;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            padding: 0.625rem 0.75rem;
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        td.center {
+            text-align: center;
+        }
+
+        .name-cell {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .team-cell {
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        /* ── 稼働区分バッジ ── */
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .badge-active {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-waiting {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* ── 分類フラグ ── */
+        .flag-check {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .flag-none {
+            color: #e2e8f0;
+            font-size: 1rem;
+        }
+
+        /* ── 1on1日付 ── */
+        .date-cell {
+            font-size: 0.8125rem;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .date-empty {
+            color: #cbd5e1;
+            font-size: 0.875rem;
+        }
+
+        /* ── 要警戒 ── */
+        .watch-icon {
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+
+        .watch-note-cell {
+            font-size: 0.8125rem;
+            color: #78716c;
+            max-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        /* ── メモ ── */
+        .memo-text {
+            font-size: 0.8125rem;
+            color: #64748b;
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        .memo-empty {
+            color: #e2e8f0;
+            font-size: 0.875rem;
+        }
+
+        /* ── モーダル ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.45);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: 0.625rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.75rem;
+        }
+
+        .modal h2 {
+            font-size: 1.125rem;
+            margin-bottom: 1.25rem;
+            color: #1e293b;
+        }
+
+        /* ── フォーム ── */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.875rem;
+            margin-bottom: 0.875rem;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #475569;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: #1e293b;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+        /* ── 分類チェックボックスグループ ── */
+        .checkbox-group {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.875rem;
+            background-color: #fafafa;
+        }
+
+        .checkbox-group-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.625rem;
+        }
+
+        .checkbox-items {
+            display: flex;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #334155;
+            user-select: none;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #ef4444;
+        }
+
+        /* ── モーダルフッター ── */
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .modal-footer button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-cancel {
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-cancel:hover {
+            background-color: #cbd5e1;
+        }
+
+        .btn-save {
+            background-color: #3b82f6;
+            color: white;
+            min-width: 80px;
+        }
+
+        .btn-save:hover {
+            background-color: #2563eb;
+        }
+
+        .modal-footer-right {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* ── レスポンシブ ── */
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; align-items: stretch; }
+            .header-controls { flex-direction: column; }
+            .team-filter, .add-member-btn { width: 100%; }
+            .modal { width: 95%; padding: 1.25rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .checkbox-items { flex-direction: column; gap: 0.625rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-content">
+            <h1>稼働管理</h1>
+            <div class="header-controls">
+                <select class="team-filter" id="teamFilter"></select>
+                <button class="add-member-btn" id="addMemberBtn">＋ メンバー追加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="summary-line" id="summaryLine"></div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>名前</th>
+                        <th>チーム</th>
+                        <th>稼働区分</th>
+                        <th class="center">要警戒</th>
+                        <th>要警戒メモ</th>
+                        <th class="center">役割不一致</th>
+                        <th class="center">スキル課題</th>
+                        <th class="center">状態懸念</th>
+                        <th>1on1実施日</th>
+                        <th>メモ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 追加・編集モーダル -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">メンバー追加</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>名前 *</label>
+                    <input type="text" id="nameInput" placeholder="山田 太郎">
+                </div>
+                <div class="form-group">
+                    <label>チーム *</label>
+                    <select id="teamInput">
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>稼働区分</label>
+                    <select id="statusTypeInput">
+                        <option value="稼働中">稼働中</option>
+                        <option value="待機中">待機中</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <label class="checkbox-item" style="padding: 0.5rem 0;">
+                        <input type="checkbox" id="cbIsWatch">
+                        要警戒
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>要警戒メモ</label>
+                    <input type="text" id="watchNoteInput" placeholder="理由を短く（任意）">
+                </div>
+            </div>
+
+            <div class="checkbox-group">
+                <div class="checkbox-group-title">分類（複数選択可）</div>
+                <div class="checkbox-items">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="cbRoleMismatch">
+                        役割不一致
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="cbSkillIssue">
+                        スキル課題
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="cbConcern">
+                        状態懸念
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>1on1実施日</label>
+                    <input type="date" id="lastOneOnOne">
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>メモ</label>
+                    <input type="text" id="memoInput" placeholder="短いメモ（任意）">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-delete" id="deleteBtn" style="display:none">削除</button>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="cancelBtn">キャンセル</button>
+                    <button class="btn-save" id="saveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================
+        // 定数
+        // =========================================================
+        const STORAGE_KEY = 'kadou_v2';
+        const TEAMS = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
+
+        let members = [];
+        let editingMemberId = null;
+
+        // =========================================================
+        // 初期化
+        // =========================================================
+        function initializeApp() {
+            const DATA_VERSION = 'csv_2026_v1';
+            if (localStorage.getItem(STORAGE_KEY + '_ver') !== DATA_VERSION) {
+                members = getSampleData();
+                saveMembers();
+                localStorage.setItem(STORAGE_KEY + '_ver', DATA_VERSION);
+            } else {
+                loadMembers();
+            }
+            populateTeamSelects();
+            setupEventListeners();
+            renderTable();
+        }
+
+        // =========================================================
+        // マスターデータ（employee_master.csv より登録）
+        // =========================================================
+        function getSampleData() {
+            return [
+                {id:"c_1",name:"柏木 浩司",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_2",name:"宮本 孝",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"成果未達／勤怠入力ミス",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-02-26",memo:"対応完了",updated_at:""},
+                {id:"c_3",name:"大野 圭祐",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"勤怠入力ミス",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-02-26",memo:"対応完了",updated_at:""},
+                {id:"c_4",name:"波戸元 久子",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_5",name:"小熊 峰明",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_6",name:"長内 亜里紗",team:"S/W1",status_type:"待機中",is_watch:true,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_7",name:"芝井 彩子",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_8",name:"生平 雅人",team:"部付き",status_type:"待機中",is_watch:true,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_9",name:"伊藤 暢規",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_10",name:"五十嵐 諒",team:"S/W2",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_11",name:"椙村 敦史",team:"S/W2",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_12",name:"大野 翔平",team:"S/W2",status_type:"稼働中",is_watch:false,watch_note:"態度評価低",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-31",memo:"月次1on1",updated_at:""},
+                {id:"c_13",name:"塚本 奨也",team:"S/W2",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_14",name:"佐藤 崇頂",team:"S/W2",status_type:"稼働中",is_watch:true,watch_note:"CS極めて低評価",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-31",memo:"月次1on1",updated_at:""},
+                {id:"c_15",name:"幸地 司",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_16",name:"尾畑 洋",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_17",name:"瀬田 康一",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_18",name:"山本 貴大",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_19",name:"村澤 英俊",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_20",name:"尾原 徳泰",team:"S/W3",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_21",name:"向江 理",team:"S/W4",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_22",name:"浦 啓吾",team:"S/W4",status_type:"稼働中",is_watch:false,watch_note:"コミュ・時間",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-18",memo:"週報提出",updated_at:""},
+                {id:"c_23",name:"中島 颯一朗",team:"S/W4",status_type:"稼働中",is_watch:true,watch_note:"日本語・元気不足",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-31",memo:"週報提出",updated_at:""},
+                {id:"c_24",name:"頼光 正典",team:"S/W4",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_25",name:"須藤 直人",team:"セミコン",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_26",name:"松永 英郎",team:"セミコン",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_27",name:"鈴木 領",team:"セミコン",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_28",name:"横山 幸生",team:"セミコン",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_29",name:"村上 昌之",team:"セミコン",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_30",name:"大谷 和也",team:"ハード",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_31",name:"桑原 宏禎",team:"ハード",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_32",name:"三田 博史",team:"ハード",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_33",name:"幸地 司",team:"メカ",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_34",name:"金子 朝哉",team:"メカ",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_35",name:"鳥居 綾子",team:"メカ",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_36",name:"相澤 祐貴",team:"メカ",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_37",name:"五十嵐 智",team:"メカ",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_38",name:"幸地 司",team:"TEC",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_39",name:"田中 宏和",team:"TEC",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_40",name:"寺田 祐司",team:"TEC",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_41",name:"中村 容子",team:"TEC",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_42",name:"豊田 淳",team:"部付き",status_type:"待機中",is_watch:true,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_43",name:"一番ヶ瀬 公弥",team:"部付き",status_type:"待機中",is_watch:true,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
+                {id:"c_44",name:"森本 勝士",team:"部付き",status_type:"待機中",is_watch:false,watch_note:"やや低評価",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-15",memo:"対応完了",updated_at:""},
+                {id:"c_45",name:"渡邉 巌夫",team:"セミコン",status_type:"待機中",is_watch:true,watch_note:"適応できず",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-04-01",memo:"対応完了",updated_at:""},
+                {id:"c_46",name:"田島 明典",team:"部付き",status_type:"稼働中",is_watch:false,watch_note:"消極的・報連相不足",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-11",memo:"週次MTG",updated_at:""},
+                {id:"c_47",name:"外垣 蓮",team:"部付き",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""}
+            ];
+        }
+
+        // =========================================================
+        // データ永続化
+        // =========================================================
+        function loadMembers() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            members = raw ? JSON.parse(raw) : [];
+        }
+
+        function saveMembers() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+        }
+
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // =========================================================
+        // チーム選択肢の設定（フィルタ + モーダル）
+        // =========================================================
+        function populateTeamSelects() {
+            // フィルタ
+            const filter = document.getElementById('teamFilter');
+            filter.innerHTML = '<option value="">全てのチーム</option>';
+            TEAMS.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                filter.appendChild(o);
+            });
+
+            // モーダル
+            const teamInput = document.getElementById('teamInput');
+            teamInput.innerHTML = '<option value="">選択してください</option>';
+            TEAMS.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                teamInput.appendChild(o);
+            });
+        }
+
+        // =========================================================
+        // サマリ行
+        // =========================================================
+        function updateSummaryLine() {
+            const total    = members.length;
+            const flagged  = members.filter(m => m.role_mismatch || m.skill_issue || m.concern).length;
+            const with1on1 = members.filter(m => m.last_1on1).length;
+            document.getElementById('summaryLine').textContent =
+                `全メンバー: ${total}名　　分類あり: ${flagged}名　　1on1記録あり: ${with1on1}名`;
+        }
+
+        // =========================================================
+        // ソート（チーム → 名前の昇順）
+        // =========================================================
+        function sortMembers(arr) {
+            return [...arr].sort((a, b) => {
+                const ti = TEAMS.indexOf(a.team) - TEAMS.indexOf(b.team);
+                if (ti !== 0) return ti;
+                return a.name.localeCompare(b.name, 'ja');
+            });
+        }
+
+        // =========================================================
+        // テーブル描画
+        // =========================================================
+        function renderTable() {
+            const filterVal = document.getElementById('teamFilter').value;
+            const visible = filterVal ? members.filter(m => m.team === filterVal) : members;
+
+            updateSummaryLine();
+
+            const flagCell = (val) => val
+                ? `<td class="center"><span class="flag-check">✓</span></td>`
+                : `<td class="center"><span class="flag-none">−</span></td>`;
+
+            const tbody = document.getElementById('tableBody');
+            const sorted = sortMembers(visible);
+
+            tbody.innerHTML = sorted.map(m => {
+                const statusBadge = m.status_type === '待機中'
+                    ? '<span class="badge badge-waiting">待機中</span>'
+                    : '<span class="badge badge-active">稼働中</span>';
+
+                const watchCell = m.is_watch
+                    ? `<td class="center"><span class="watch-icon">⚠</span></td>`
+                    : `<td class="center"><span class="flag-none">−</span></td>`;
+
+                const watchNoteCell = m.watch_note
+                    ? `<td><span class="watch-note-cell" title="${m.watch_note}">${m.watch_note}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+
+                const oneOnOneCell = m.last_1on1
+                    ? `<td class="date-cell">${m.last_1on1}</td>`
+                    : `<td><span class="date-empty">−</span></td>`;
+
+                const memoCell = m.memo
+                    ? `<td><span class="memo-text" title="${m.memo}">${m.memo}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+
+                return `<tr data-id="${m.id}">
+                    <td class="name-cell">${m.name}</td>
+                    <td class="team-cell">${m.team}</td>
+                    <td>${statusBadge}</td>
+                    ${watchCell}
+                    ${watchNoteCell}
+                    ${flagCell(m.role_mismatch)}
+                    ${flagCell(m.skill_issue)}
+                    ${flagCell(m.concern)}
+                    ${oneOnOneCell}
+                    ${memoCell}
+                </tr>`;
+            }).join('');
+
+            tbody.querySelectorAll('tr').forEach(row => {
+                row.addEventListener('click', () => openEditModal(row.dataset.id));
+            });
+        }
+
+        // =========================================================
+        // イベント設定
+        // =========================================================
+        function setupEventListeners() {
+            document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
+            document.getElementById('saveBtn').addEventListener('click', saveMember);
+            document.getElementById('cancelBtn').addEventListener('click', closeModal);
+            document.getElementById('deleteBtn').addEventListener('click', deleteMember);
+            document.getElementById('teamFilter').addEventListener('change', renderTable);
+            document.getElementById('modalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('modalOverlay')) closeModal();
+            });
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') closeModal();
+                if (e.ctrlKey && e.key === 'Enter') saveMember();
+            });
+        }
+
+        // =========================================================
+        // モーダル操作
+        // =========================================================
+        function openAddModal() {
+            editingMemberId = null;
+            document.getElementById('modalTitle').textContent = 'メンバー追加';
+            document.getElementById('nameInput').value = '';
+            document.getElementById('teamInput').value = '';
+            document.getElementById('statusTypeInput').value = '稼働中';
+            document.getElementById('cbIsWatch').checked = false;
+            document.getElementById('watchNoteInput').value = '';
+            document.getElementById('cbRoleMismatch').checked = false;
+            document.getElementById('cbSkillIssue').checked = false;
+            document.getElementById('cbConcern').checked = false;
+            document.getElementById('lastOneOnOne').value = '';
+            document.getElementById('memoInput').value = '';
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('modalOverlay').classList.add('visible');
+            setTimeout(() => document.getElementById('nameInput').focus(), 50);
+        }
+
+        function openEditModal(id) {
+            const m = members.find(x => x.id === id);
+            if (!m) return;
+            editingMemberId = id;
+            document.getElementById('modalTitle').textContent = m.name + ' を編集';
+            document.getElementById('nameInput').value = m.name;
+            document.getElementById('teamInput').value = m.team;
+            document.getElementById('statusTypeInput').value = m.status_type;
+            document.getElementById('cbIsWatch').checked    = !!m.is_watch;
+            document.getElementById('watchNoteInput').value = m.watch_note || '';
+            document.getElementById('cbRoleMismatch').checked = !!m.role_mismatch;
+            document.getElementById('cbSkillIssue').checked   = !!m.skill_issue;
+            document.getElementById('cbConcern').checked      = !!m.concern;
+            document.getElementById('lastOneOnOne').value = m.last_1on1 || '';
+            document.getElementById('memoInput').value = m.memo || '';
+            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('modalOverlay').classList.add('visible');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('visible');
+            editingMemberId = null;
+        }
+
+        // =========================================================
+        // 保存・削除
+        // =========================================================
+        function saveMember() {
+            const name = document.getElementById('nameInput').value.trim();
+            const team = document.getElementById('teamInput').value;
+            if (!name || !team) {
+                alert('名前とチームは必須です');
+                return;
+            }
+
+            const record = {
+                id:           editingMemberId || ('m_' + Date.now()),
+                name:         name,
+                team:         team,
+                status_type:  document.getElementById('statusTypeInput').value,
+                is_watch:     document.getElementById('cbIsWatch').checked,
+                watch_note:   document.getElementById('watchNoteInput').value.trim(),
+                role_mismatch: document.getElementById('cbRoleMismatch').checked,
+                skill_issue:   document.getElementById('cbSkillIssue').checked,
+                concern:       document.getElementById('cbConcern').checked,
+                last_1on1:    document.getElementById('lastOneOnOne').value,
+                memo:         document.getElementById('memoInput').value.trim(),
+                updated_at:   getToday()
+            };
+
+            if (editingMemberId) {
+                const idx = members.findIndex(m => m.id === editingMemberId);
+                if (idx >= 0) members[idx] = record;
+            } else {
+                members.push(record);
+            }
+
+            saveMembers();
+            renderTable();
+            closeModal();
+        }
+
+        function deleteMember() {
+            if (!editingMemberId) return;
+            const m = members.find(x => x.id === editingMemberId);
+            if (!m || !confirm(`「${m.name}」を削除してもよろしいですか？`)) return;
+            members = members.filter(x => x.id !== editingMemberId);
+            saveMembers();
+            renderTable();
+            closeModal();
+        }
+
+        // =========================================================
+        // 起動
+        // =========================================================
+        initializeApp();
+    </script>
+</body>
+</html>
