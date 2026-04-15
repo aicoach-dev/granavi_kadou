@@ -755,6 +755,8 @@
     ============================== -->
     <div id="monthlySection" style="display:none">
         <div class="main-container">
+            <div class="fetch-status" id="monthlyFetchStatus"></div>
+            <div class="sheet-warning">⚠ このデータはグラナビ画面から更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
             <div class="monthly-controls">
                 <div class="month-nav">
                     <button class="month-nav-btn" id="monthPrevBtn">◀</button>
@@ -994,6 +996,7 @@
         let monthlyRecords         = [];
         let monthlyLastLoadedAt    = null;
         let monthlyLoadFailed      = false;   // 読み込み失敗フラグ（保存ガード用）
+        let monthlyFetchedAt       = null;
         let currentYearMonth       = getCurrentYearMonth();
         let editingMonthlyMemberId = null;
 
@@ -1003,6 +1006,7 @@
         async function initializeApp() {
             document.getElementById('appVersion').textContent = APP_VERSION;
             setInterval(updateFetchStatus, 60000);
+            setInterval(updateMonthlyFetchStatus, 60000);
 
             await Promise.all([loadMembers(), loadMonthlyRecords()]);
 
@@ -1203,11 +1207,35 @@
                 monthlyRecords      = data.value ? JSON.parse(data.value) : [];
                 monthlyLastLoadedAt = data.updated_at;
                 monthlyLoadFailed   = false;
+                monthlyFetchedAt    = new Date();
+                updateMonthlyFetchStatus();
             } catch (e) {
                 console.warn('月次データ読み込み失敗', e);
                 monthlyRecords    = [];
                 monthlyLoadFailed = true;   // 保存処理をすべてブロックするフラグ
+                monthlyFetchedAt  = null;
+                updateMonthlyFetchStatus();
             }
+        }
+
+        function updateMonthlyFetchStatus() {
+            const el = document.getElementById('monthlyFetchStatus');
+            if (!el) return;
+            if (monthlyLoadFailed) {
+                el.innerHTML = '<span class="status-dot dot-danger"></span>月次データの取得に失敗しています<span class="fetch-hint">画面を更新して再度お試しください</span>';
+                el.className = 'fetch-status danger';
+                return;
+            }
+            if (!monthlyFetchedAt) return;
+            const diffMin  = Math.floor((new Date() - monthlyFetchedAt) / 60000);
+            const timeStr  = monthlyFetchedAt.toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            const elapsed  = diffMin < 1 ? 'たった今' : `${diffMin}分前`;
+            const dotClass = diffMin >= 15 ? 'dot-danger' : diffMin >= 5 ? 'dot-warn' : 'dot-ok';
+            el.innerHTML   =
+                `<span class="status-dot ${dotClass}"></span>` +
+                `最終取得：${timeStr}（${elapsed}）` +
+                `<span class="fetch-hint">（再読み込みはブラウザ更新）</span>`;
+            el.className   = diffMin >= 15 ? 'fetch-status danger' : diffMin >= 5 ? 'fetch-status warn' : 'fetch-status';
         }
 
         // UIフィードバックつき保存（モーダルの保存ボタン向け）
