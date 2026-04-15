@@ -243,6 +243,37 @@
             font-size: 0.875rem;
         }
 
+        .date-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            align-items: flex-start;
+        }
+
+        .elapsed-badge {
+            display: inline-block;
+            padding: 0.15rem 0.45rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .elapsed-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .elapsed-danger {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .elapsed-empty {
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+
         /* ── 要警戒 ── */
         .watch-icon {
             font-size: 0.9rem;
@@ -707,6 +738,7 @@
             <h1>グラナビ 稼働<span class="app-version" id="appVersion"></span></h1>
             <div class="header-controls">
                 <select class="team-filter" id="teamFilter"></select>
+                <select class="team-filter" id="kadouFocusFilter"></select>
                 <button class="add-member-btn" id="addMemberBtn">＋ メンバー追加</button>
             </div>
         </div>
@@ -740,7 +772,7 @@
                             <th class="center">役割不一致</th>
                             <th class="center">スキル課題</th>
                             <th class="center">状態懸念</th>
-                            <th>1on1実施日</th>
+                            <th>最終1on1日</th>
                             <th>メモ</th>
                         </tr>
                     </thead>
@@ -856,7 +888,7 @@
 
             <div class="form-row full">
                 <div class="form-group">
-                    <label>1on1実施日</label>
+                    <label>最終1on1日</label>
                     <input type="date" id="lastOneOnOne">
                 </div>
             </div>
@@ -1149,6 +1181,57 @@
             return new Date().toISOString().split('T')[0];
         }
 
+        function getYearMonthFromDate_(dateStr) {
+            const text = String(dateStr || '').trim();
+            if (!text) return '';
+            const match = text.match(/^(\d{4})-(\d{2})-\d{2}$/);
+            if (!match) return '';
+            return `${match[1]}-${match[2]}`;
+        }
+
+        function syncMonthlyOneOnOneFromLast1on1_(member) {
+            if (!member || !member.id) return false;
+            if (!member.last_1on1) return false;
+
+            const yearMonth = getYearMonthFromDate_(member.last_1on1);
+            if (!yearMonth) return false;
+
+            const recordId = `${member.id}__${yearMonth}`;
+            const idx = monthlyRecords.findIndex(r => r.id === recordId);
+
+            if (idx >= 0) {
+                if (monthlyRecords[idx].one_on_one_count >= 1) return false;
+                monthlyRecords[idx] = {
+                    ...monthlyRecords[idx],
+                    one_on_one_count: 1,
+                    updated_at: getToday()
+                };
+                return true;
+            }
+
+            const record = createEmptyRecord(member.id, yearMonth);
+            record.one_on_one_count = 1;
+            record.updated_at = getToday();
+            monthlyRecords.push(record);
+            return true;
+        }
+
+        function getElapsed1on1Days(last1on1) {
+            if (!last1on1) return null;
+            const date = new Date(`${last1on1}T00:00:00`);
+            if (Number.isNaN(date.getTime())) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return Math.floor((today - date) / 86400000);
+        }
+
+        function getElapsedBadgeClass(days) {
+            if (days === null) return 'elapsed-empty';
+            if (days >= 31) return 'elapsed-danger';
+            if (days >= 15) return 'elapsed-warning';
+            return '';
+        }
+
         // =========================================================
         // 月次実績：ユーティリティ
         // =========================================================
@@ -1352,6 +1435,12 @@
                 o.value = t; o.textContent = t;
                 filter.appendChild(o);
             });
+            const focusFilter = document.getElementById('kadouFocusFilter');
+            focusFilter.innerHTML = [
+                '<option value="">全件</option>',
+                '<option value="watch">要警戒のみ</option>',
+                '<option value="waiting">待機のみ</option>'
+            ].join('');
             const teamInput = document.getElementById('teamInput');
             teamInput.innerHTML = '<option value="">選択してください</option>';
             TEAMS.forEach(t => {
@@ -1394,7 +1483,13 @@
 
         function renderTable() {
             const filterVal = document.getElementById('teamFilter').value;
-            const visible   = filterVal ? members.filter(m => m.team === filterVal) : members;
+            const focusVal  = document.getElementById('kadouFocusFilter').value;
+            const visible   = members.filter(m => {
+                if (filterVal && m.team !== filterVal) return false;
+                if (focusVal === 'watch' && !m.is_watch) return false;
+                if (focusVal === 'waiting' && m.status_type !== '待機中') return false;
+                return true;
+            });
             updateSummaryLine();
 
             const flagCell = (val) => val
@@ -1414,9 +1509,8 @@
                 const watchNoteCell= m.watch_note
                     ? `<td><span class="watch-note-cell" title="${m.watch_note}">${m.watch_note}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
-                const oneOnOneCell = m.last_1on1
-                    ? `<td class="date-cell">${m.last_1on1}</td>`
-                    : `<td><span class="date-empty">−</span></td>`;
+                const last1on1     = (m.last_1on1 || '').trim();
+                const oneOnOneCell = `<td class="date-cell">${last1on1}</td>`;
                 const memoCell     = m.memo
                     ? `<td><span class="memo-text" title="${m.memo}">${m.memo}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
@@ -1742,7 +1836,11 @@
             } else {
                 members.push(record);
             }
+            const monthlyChanged = syncMonthlyOneOnOneFromLast1on1_(record);
             await saveMembers();
+            if (monthlyChanged) {
+                await saveMonthlyRecordsQuiet();
+            }
             renderTable();
             closeModal();
         }
@@ -1766,14 +1864,15 @@
             document.getElementById('tabMonthly').addEventListener('click', () => switchTab('monthly'));
 
             // 稼働一覧（既存）
-            document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
-            document.getElementById('saveBtn').addEventListener('click',      saveMember);
-            document.getElementById('cancelBtn').addEventListener('click',    closeModal);
-            document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
-            document.getElementById('teamFilter').addEventListener('change',  renderTable);
-            document.getElementById('modalOverlay').addEventListener('click', e => {
-                if (e.target === document.getElementById('modalOverlay')) closeModal();
-            });
+        document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
+        document.getElementById('saveBtn').addEventListener('click',      saveMember);
+        document.getElementById('cancelBtn').addEventListener('click',    closeModal);
+        document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
+        document.getElementById('teamFilter').addEventListener('change',  renderTable);
+        document.getElementById('kadouFocusFilter').addEventListener('change', renderTable);
+        document.getElementById('modalOverlay').addEventListener('click', e => {
+            if (e.target === document.getElementById('modalOverlay')) closeModal();
+        });
 
             // 月次実績（新規）
             document.getElementById('monthPrevBtn').addEventListener('click',    () => changeMonth(-1));
