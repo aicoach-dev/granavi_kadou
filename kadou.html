@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>稼働管理</title>
+    <title>グラナビ 稼働</title>
     <style>
         * {
             margin: 0;
@@ -408,6 +408,31 @@
             gap: 0.5rem;
         }
 
+        /* ── バージョン表示 ── */
+        .app-version {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 400;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        /* ── 最終取得時刻 ── */
+        .fetch-status {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        .fetch-status.warn  { color: #f97316; }
+        .fetch-status.danger { color: #ef4444; font-weight: 600; }
+
+        /* ── 直編集抑止 ── */
+        .sheet-warning {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }
+
         /* ── レスポンシブ ── */
         @media (max-width: 768px) {
             .header-content { flex-direction: column; align-items: stretch; }
@@ -423,7 +448,7 @@
 
     <div class="header">
         <div class="header-content">
-            <h1>稼働管理</h1>
+            <h1>グラナビ 稼働<span class="app-version" id="appVersion"></span></h1>
             <div class="header-controls">
                 <select class="team-filter" id="teamFilter"></select>
                 <button class="add-member-btn" id="addMemberBtn">＋ メンバー追加</button>
@@ -432,7 +457,9 @@
     </div>
 
     <div class="main-container">
+        <div class="fetch-status" id="fetchStatus"></div>
         <div class="summary-line" id="summaryLine"></div>
+        <div class="sheet-warning">⚠ このデータはグラナビ画面からのみ更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
         <div class="table-container">
             <table>
                 <thead>
@@ -546,6 +573,11 @@
         const TEAMS = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
 
         // =========================================================
+        // バージョン
+        // =========================================================
+        const APP_VERSION = 'v0.3.1';
+
+        // =========================================================
         // GAS連携設定
         // =========================================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec';
@@ -553,11 +585,19 @@
         let members = [];
         let editingMemberId = null;
         let lastLoadedAt = null; // 楽観的ロック用：最終読込タイムスタンプ
+        let fetchedAt = null;    // 最終取得時刻（表示用）
 
         // =========================================================
         // 初期化
         // =========================================================
         async function initializeApp() {
+            // バージョン表示
+            const vEl = document.getElementById('appVersion');
+            if (vEl) vEl.textContent = APP_VERSION;
+
+            // 取得時刻を1分ごとに更新
+            setInterval(updateFetchStatus, 60000);
+
             await loadMembers();
             // GASにデータがない場合（初回起動時）はマスターデータを投入
             if (members.length === 0) {
@@ -633,10 +673,30 @@
                 const data = await res.json();
                 members = data.value ? JSON.parse(data.value) : [];
                 lastLoadedAt = data.updated_at;
+                fetchedAt = new Date(); // 取得時刻を記録
+                updateFetchStatus();
             } catch (e) {
                 alert('データの読み込みに失敗しました。通信状態を確認してください。');
                 members = [];
             }
+        }
+
+        // 最終取得時刻の表示更新（1分ごとに呼ばれる）
+        function updateFetchStatus() {
+            const el = document.getElementById('fetchStatus');
+            if (!el || !fetchedAt) return;
+
+            const diffMin = Math.floor((new Date() - fetchedAt) / 60000);
+            const timeStr = fetchedAt.toLocaleString('ja-JP', {
+                month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+            const elapsedStr = diffMin < 1 ? 'たった今' : `${diffMin}分前`;
+
+            el.textContent = `最終取得：${timeStr}（${elapsedStr}）`;
+            el.className = diffMin >= 15 ? 'fetch-status danger'
+                         : diffMin >= 5  ? 'fetch-status warn'
+                         : 'fetch-status';
         }
 
         async function saveMembers() {
@@ -647,7 +707,14 @@
                 const check = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const latest = await check.json();
                 if (latest.updated_at && latest.updated_at !== lastLoadedAt) {
-                    const ok = confirm('他のユーザーが変更しています。上書きしますか？\n（キャンセル推奨：再読込して再編集してください）');
+                    const updatedTime = latest.updated_at
+                        ? new Date(latest.updated_at).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+                        : '不明';
+                    const ok = confirm(
+                        `他のユーザーが先に更新しました（${updatedTime}）。\n` +
+                        `ページをリロードして最新データを確認してから、再度編集してください。\n\n` +
+                        `このまま上書きする場合のみ「OK」を押してください。`
+                    );
                     if (!ok) { showSavingIndicator(false); return; }
                 }
 
