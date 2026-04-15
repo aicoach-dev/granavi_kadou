@@ -421,16 +421,36 @@
         .fetch-status {
             font-size: 0.8rem;
             color: #94a3b8;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
         }
         .fetch-status.warn  { color: #f97316; }
         .fetch-status.danger { color: #ef4444; font-weight: 600; }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-ok     { background-color: #22c55e; }
+        .dot-warn   { background-color: #f97316; }
+        .dot-danger { background-color: #ef4444; box-shadow: 0 0 4px rgba(239,68,68,0.5); }
+
+        .fetch-hint {
+            font-size: 0.72rem;
+            color: #cbd5e1;
+            margin-left: 0.25rem;
+        }
 
         /* ── 直編集抑止 ── */
         .sheet-warning {
             font-size: 0.75rem;
             color: #94a3b8;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.625rem;
         }
 
         /* ── レスポンシブ ── */
@@ -458,8 +478,8 @@
 
     <div class="main-container">
         <div class="fetch-status" id="fetchStatus"></div>
+        <div class="sheet-warning">⚠ このデータはグラナビ画面から更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
         <div class="summary-line" id="summaryLine"></div>
-        <div class="sheet-warning">⚠ このデータはグラナビ画面からのみ更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
         <div class="table-container">
             <table>
                 <thead>
@@ -693,7 +713,15 @@
             });
             const elapsedStr = diffMin < 1 ? 'たった今' : `${diffMin}分前`;
 
-            el.textContent = `最終取得：${timeStr}（${elapsedStr}）`;
+            const dotClass = diffMin >= 15 ? 'dot-danger'
+                           : diffMin >= 5  ? 'dot-warn'
+                           : 'dot-ok';
+
+            el.innerHTML =
+                `<span class="status-dot ${dotClass}"></span>` +
+                `最終取得：${timeStr}（${elapsedStr}）` +
+                `<span class="fetch-hint">（再読み込みはブラウザ更新）</span>`;
+
             el.className = diffMin >= 15 ? 'fetch-status danger'
                          : diffMin >= 5  ? 'fetch-status warn'
                          : 'fetch-status';
@@ -772,7 +800,7 @@
             const flagged  = members.filter(m => m.role_mismatch || m.skill_issue || m.concern).length;
             const with1on1 = members.filter(m => m.last_1on1).length;
             document.getElementById('summaryLine').textContent =
-                `全メンバー: ${total}名　　分類あり: ${flagged}名　　1on1記録あり: ${with1on1}名`;
+                `全メンバー：${total}名　｜　分類あり：${flagged}名　｜　1on1記録あり：${with1on1}名`;
         }
 
         // =========================================================
