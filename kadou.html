@@ -47,6 +47,41 @@
             flex-wrap: wrap;
         }
 
+        /* ── タブナビゲーション（新規追加） ── */
+        .tab-bar {
+            background-color: #0f172a;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .tab-bar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+        }
+
+        .tab-btn {
+            padding: 0.625rem 1.25rem;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: #e2e8f0;
+        }
+
+        .tab-btn.active {
+            color: white;
+            border-bottom-color: #3b82f6;
+        }
+
         .team-filter {
             padding: 0.5rem 0.75rem;
             border: none;
@@ -403,6 +438,11 @@
             background-color: #2563eb;
         }
 
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .modal-footer-right {
             display: flex;
             gap: 0.5rem;
@@ -426,7 +466,7 @@
             align-items: center;
             gap: 0.375rem;
         }
-        .fetch-status.warn  { color: #f97316; }
+        .fetch-status.warn   { color: #f97316; }
         .fetch-status.danger { color: #ef4444; font-weight: 600; }
 
         .status-dot {
@@ -446,12 +486,206 @@
             margin-left: 0.25rem;
         }
 
-        /* ── 直編集抑止 ── */
         .sheet-warning {
             font-size: 0.75rem;
             color: #94a3b8;
             margin-bottom: 0.625rem;
         }
+
+        /* =========================================================
+           月次実績 追加スタイル
+        ========================================================= */
+
+        /* 月ナビゲーション */
+        .monthly-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+
+        .monthly-sub-filter {
+            min-width: 160px;
+        }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .month-nav-btn {
+            padding: 0.375rem 0.875rem;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background-color 0.15s;
+        }
+
+        .month-nav-btn:hover    { background: #334155; }
+        .month-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .month-display {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            min-width: 7.5rem;
+            text-align: center;
+        }
+
+        /* 未入力行のハイライト */
+        .monthly-row-pending {
+            background-color: #fffbeb !important;
+        }
+        .monthly-row-pending:hover {
+            background-color: #fef9c3 !important;
+        }
+
+        /* ○/×/− */
+        .m-ok   { font-weight: 700; color: #16a34a; font-size: 1rem; }
+        .m-ng   { font-weight: 700; color: #dc2626; font-size: 1rem; }
+        .m-dash { color: #cbd5e1; font-size: 1rem; }
+        .m-count { font-size: 0.7rem; color: #94a3b8; margin-left: 0.15rem; }
+
+        .monthly-toggle-cell {
+            cursor: pointer;
+            user-select: none;
+        }
+        .monthly-toggle-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            min-height: 24px;
+            padding: 0 0.4rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .monthly-toggle-cell:hover .monthly-toggle-chip {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+
+        .binary-select {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: white;
+            color: #334155;
+            font-size: 0.875rem;
+        }
+
+        .plus-total { font-weight: 700; color: #7c3aed; }
+
+        /* 入力状態バッジ */
+        .badge-pending {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background-color: #fef3c7;
+            color: #92400e;
+            white-space: nowrap;
+        }
+
+        .badge-entered {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background-color: #dcfce7;
+            color: #166534;
+            white-space: nowrap;
+        }
+
+        /* 履歴リンク（名前クリック） */
+        .name-history-link {
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            text-underline-offset: 2px;
+            color: #1e293b;
+        }
+        .name-history-link:hover { color: #3b82f6; }
+
+        /* カウンター入力 */
+        .counter-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .counter-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: #f8fafc;
+            cursor: pointer;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.1s;
+            flex-shrink: 0;
+        }
+        .counter-btn:hover { background: #e2e8f0; }
+
+        .counter-input {
+            width: 64px !important;
+            text-align: center;
+            padding: 0.375rem 0.25rem !important;
+        }
+
+        /* モーダル内セクション */
+        .modal-section       { margin-bottom: 1.125rem; }
+        .modal-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.625rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* 履歴モーダル */
+        .modal-wide { max-width: 660px; }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+        .history-table th {
+            padding: 0.5rem 0.625rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #475569;
+            background: #f1f5f9;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .history-table th.center { text-align: center; }
+        .history-table td {
+            padding: 0.5rem 0.625rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .history-table td.center { text-align: center; }
+        .history-table tr:last-child td { border-bottom: none; }
+        .history-month { font-weight: 600; color: #334155; white-space: nowrap; }
+        .history-empty { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.875rem; }
 
         /* ── レスポンシブ ── */
         @media (max-width: 768px) {
@@ -461,11 +695,13 @@
             .modal { width: 95%; padding: 1.25rem; }
             .form-row { grid-template-columns: 1fr; }
             .checkbox-items { flex-direction: column; gap: 0.625rem; }
+            .monthly-controls { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
 
+    <!-- ヘッダー -->
     <div class="header">
         <div class="header-content">
             <h1>グラナビ 稼働<span class="app-version" id="appVersion"></span></h1>
@@ -476,32 +712,87 @@
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="fetch-status" id="fetchStatus"></div>
-        <div class="sheet-warning">⚠ このデータはグラナビ画面から更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
-        <div class="summary-line" id="summaryLine"></div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>名前</th>
-                        <th>チーム</th>
-                        <th>稼働区分</th>
-                        <th class="center">要警戒</th>
-                        <th>要警戒メモ</th>
-                        <th class="center">役割不一致</th>
-                        <th class="center">スキル課題</th>
-                        <th class="center">状態懸念</th>
-                        <th>1on1実施日</th>
-                        <th>メモ</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+    <!-- タブナビゲーション -->
+    <div class="tab-bar">
+        <div class="tab-bar-inner">
+            <button class="tab-btn active" id="tabKadou">稼働一覧</button>
+            <button class="tab-btn" id="tabMonthly">月次実績</button>
         </div>
     </div>
 
-    <!-- 追加・編集モーダル -->
+    <!-- ==============================
+         稼働一覧セクション（既存）
+    ============================== -->
+    <div id="kadouSection">
+        <div class="main-container">
+            <div class="fetch-status" id="fetchStatus"></div>
+            <div class="sheet-warning">⚠ このデータはグラナビ画面から更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
+            <div class="summary-line" id="summaryLine"></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>チーム</th>
+                            <th>稼働区分</th>
+                            <th class="center">要警戒</th>
+                            <th>要警戒メモ</th>
+                            <th class="center">役割不一致</th>
+                            <th class="center">スキル課題</th>
+                            <th class="center">状態懸念</th>
+                            <th>1on1実施日</th>
+                            <th>メモ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         月次実績セクション（新規追加）
+    ============================== -->
+    <div id="monthlySection" style="display:none">
+        <div class="main-container">
+            <div class="monthly-controls">
+                <div class="month-nav">
+                    <button class="month-nav-btn" id="monthPrevBtn">◀</button>
+                    <span class="month-display" id="monthDisplay">―</span>
+                    <button class="month-nav-btn" id="monthNextBtn">▶</button>
+                </div>
+                <select class="team-filter" id="monthlyTeamFilter"></select>
+                <select class="team-filter monthly-sub-filter" id="monthlyOneOnOneFilter">
+                    <option value="">全員</option>
+                    <option value="uncompleted">1on1未実施のみ</option>
+                </select>
+            </div>
+            <div class="summary-line" id="monthlySummary"></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>チーム</th>
+                            <th class="center">1on1</th>
+                            <th class="center">月報</th>
+                            <th class="center">顧客ニーズ</th>
+                            <th class="center">ブログ</th>
+                            <th class="center">面接協力</th>
+                            <th class="center">＋計</th>
+                            <th>一言メモ</th>
+                            <th class="center">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         モーダル：メンバー追加・編集（既存）
+    ============================== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h2 id="modalTitle">メンバー追加</h2>
@@ -585,45 +876,146 @@
         </div>
     </div>
 
+    <!-- ==============================
+         モーダル：月次実績 編集（新規追加）
+    ============================== -->
+    <div class="modal-overlay" id="monthlyModalOverlay">
+        <div class="modal">
+            <h2 id="monthlyModalTitle">月次実績 編集</h2>
+
+            <div class="modal-section">
+                <div class="modal-section-title">1on1 / 月報</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>1on1 実施</label>
+                        <select id="m1on1" class="binary-select">
+                            <option value="0">NO</option>
+                            <option value="1">YES</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>月報 提出</label>
+                        <select id="mReport" class="binary-select">
+                            <option value="0">NO</option>
+                            <option value="1">YES</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">プラス行動</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>顧客ニーズ提供</label>
+                        <div class="counter-wrap">
+                            <button type="button" class="counter-btn" onclick="adjust('mCustomer',-1)">−</button>
+                            <input type="number" id="mCustomer" class="counter-input" min="0" max="99" value="0">
+                            <button type="button" class="counter-btn" onclick="adjust('mCustomer',1)">＋</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>ブログ投稿</label>
+                        <div class="counter-wrap">
+                            <button type="button" class="counter-btn" onclick="adjust('mBlog',-1)">−</button>
+                            <input type="number" id="mBlog" class="counter-input" min="0" max="99" value="0">
+                            <button type="button" class="counter-btn" onclick="adjust('mBlog',1)">＋</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>面接・面談協力</label>
+                        <div class="counter-wrap">
+                            <button type="button" class="counter-btn" onclick="adjust('mInterview',-1)">−</button>
+                            <input type="number" id="mInterview" class="counter-input" min="0" max="99" value="0">
+                            <button type="button" class="counter-btn" onclick="adjust('mInterview',1)">＋</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">一言メモ</div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <input type="text" id="mMemo" placeholder="特記事項など（任意）">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div style="font-size:0.75rem;color:#94a3b8">Ctrl+Enter で保存</div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="monthlyCancelBtn">キャンセル</button>
+                    <button class="btn-save"   id="monthlySaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         モーダル：個人履歴（新規追加）
+    ============================== -->
+    <div class="modal-overlay" id="historyModalOverlay">
+        <div class="modal modal-wide">
+            <h2 id="historyModalTitle">月次実績 履歴</h2>
+            <div id="historyContent"></div>
+            <div class="modal-footer">
+                <div></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="historyCloseBtn">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // =========================================================
         // 定数
         // =========================================================
-        const STORAGE_KEY = 'kadou_v2';
-        const TEAMS = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
+        const STORAGE_KEY  = 'kadou_v2';
+        const MONTHLY_KEY  = 'kadou_monthly_v1';
+        const TEAMS        = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
+        const APP_VERSION  = 'v0.4.0';
+        const GAS_URL      = 'https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec';
 
         // =========================================================
-        // バージョン
+        // 状態変数（既存）
         // =========================================================
-        const APP_VERSION = 'v0.3.1';
+        let members          = [];
+        let editingMemberId  = null;
+        let lastLoadedAt     = null;
+        let fetchedAt        = null;
 
         // =========================================================
-        // GAS連携設定
+        // 状態変数（月次実績）
         // =========================================================
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec';
-
-        let members = [];
-        let editingMemberId = null;
-        let lastLoadedAt = null; // 楽観的ロック用：最終読込タイムスタンプ
-        let fetchedAt = null;    // 最終取得時刻（表示用）
+        let monthlyRecords         = [];
+        let monthlyLastLoadedAt    = null;
+        let monthlyLoadFailed      = false;   // 読み込み失敗フラグ（保存ガード用）
+        let currentYearMonth       = getCurrentYearMonth();
+        let editingMonthlyMemberId = null;
 
         // =========================================================
         // 初期化
         // =========================================================
         async function initializeApp() {
-            // バージョン表示
-            const vEl = document.getElementById('appVersion');
-            if (vEl) vEl.textContent = APP_VERSION;
-
-            // 取得時刻を1分ごとに更新
+            document.getElementById('appVersion').textContent = APP_VERSION;
             setInterval(updateFetchStatus, 60000);
 
-            await loadMembers();
-            // GASにデータがない場合（初回起動時）はマスターデータを投入
+            await Promise.all([loadMembers(), loadMonthlyRecords()]);
+
             if (members.length === 0) {
                 members = getSampleData();
                 await saveMembers();
             }
+
+            // 当月レコードを全員分自動生成（A案）
+            if (ensureCurrentMonthRecords()) {
+                // 自動保存は行わない
+            }
+
             populateTeamSelects();
             setupEventListeners();
             renderTable();
@@ -685,15 +1077,15 @@
         }
 
         // =========================================================
-        // データ永続化
+        // 稼働一覧：データ永続化（既存）
         // =========================================================
         async function loadMembers() {
             try {
-                const res = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
+                const res  = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const data = await res.json();
-                members = data.value ? JSON.parse(data.value) : [];
+                members      = data.value ? JSON.parse(data.value) : [];
                 lastLoadedAt = data.updated_at;
-                fetchedAt = new Date(); // 取得時刻を記録
+                fetchedAt    = new Date();
                 updateFetchStatus();
             } catch (e) {
                 alert('データの読み込みに失敗しました。通信状態を確認してください。');
@@ -701,58 +1093,42 @@
             }
         }
 
-        // 最終取得時刻の表示更新（1分ごとに呼ばれる）
         function updateFetchStatus() {
             const el = document.getElementById('fetchStatus');
             if (!el || !fetchedAt) return;
-
-            const diffMin = Math.floor((new Date() - fetchedAt) / 60000);
-            const timeStr = fetchedAt.toLocaleString('ja-JP', {
-                month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit'
-            });
-            const elapsedStr = diffMin < 1 ? 'たった今' : `${diffMin}分前`;
-
-            const dotClass = diffMin >= 15 ? 'dot-danger'
-                           : diffMin >= 5  ? 'dot-warn'
-                           : 'dot-ok';
-
-            el.innerHTML =
+            const diffMin   = Math.floor((new Date() - fetchedAt) / 60000);
+            const timeStr   = fetchedAt.toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            const elapsed   = diffMin < 1 ? 'たった今' : `${diffMin}分前`;
+            const dotClass  = diffMin >= 15 ? 'dot-danger' : diffMin >= 5 ? 'dot-warn' : 'dot-ok';
+            el.innerHTML    =
                 `<span class="status-dot ${dotClass}"></span>` +
-                `最終取得：${timeStr}（${elapsedStr}）` +
+                `最終取得：${timeStr}（${elapsed}）` +
                 `<span class="fetch-hint">（再読み込みはブラウザ更新）</span>`;
-
-            el.className = diffMin >= 15 ? 'fetch-status danger'
-                         : diffMin >= 5  ? 'fetch-status warn'
-                         : 'fetch-status';
+            el.className    = diffMin >= 15 ? 'fetch-status danger' : diffMin >= 5 ? 'fetch-status warn' : 'fetch-status';
         }
 
         async function saveMembers() {
             try {
                 showSavingIndicator(true);
-
-                // 楽観的ロック：保存前に最新状態を確認し、他ユーザーの変更を検知
-                const check = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
+                const check  = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const latest = await check.json();
                 if (latest.updated_at && latest.updated_at !== lastLoadedAt) {
-                    const updatedTime = latest.updated_at
-                        ? new Date(latest.updated_at).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+                    const t  = latest.updated_at
+                        ? new Date(latest.updated_at).toLocaleString('ja-JP', { hour:'2-digit', minute:'2-digit' })
                         : '不明';
                     const ok = confirm(
-                        `他のユーザーが先に更新しました（${updatedTime}）。\n` +
+                        `他のユーザーが先に更新しました（${t}）。\n` +
                         `ページをリロードして最新データを確認してから、再度編集してください。\n\n` +
                         `このまま上書きする場合のみ「OK」を押してください。`
                     );
                     if (!ok) { showSavingIndicator(false); return; }
                 }
-
                 await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ key: STORAGE_KEY, value: JSON.stringify(members) })
                 });
                 lastLoadedAt = new Date().toISOString();
                 showSavingIndicator(false);
-
             } catch (e) {
                 alert('保存に失敗しました。通信状態を確認してください。');
                 localStorage.setItem(STORAGE_KEY + '_backup', JSON.stringify(members));
@@ -770,10 +1146,177 @@
         }
 
         // =========================================================
-        // チーム選択肢の設定（フィルタ + モーダル）
+        // 月次実績：ユーティリティ
+        // =========================================================
+        function getCurrentYearMonth() {
+            const n = new Date();
+            return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function getYearMonthLabel(ym) {
+            const [y, m] = ym.split('-');
+            return `${y}年${parseInt(m)}月`;
+        }
+
+        function shiftYearMonth(ym, delta) {
+            const [y, m] = ym.split('-').map(Number);
+            const d = new Date(y, m - 1 + delta, 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function createEmptyRecord(memberId, yearMonth) {
+            return {
+                id:                   `${memberId}__${yearMonth}`,
+                member_id:            memberId,
+                year_month:           yearMonth,
+                one_on_one_count:     0,
+                monthly_report_count: 0,
+                plus_customer:        0,
+                plus_blog:            0,
+                plus_interview:       0,
+                memo:                 '',
+                created_at:           getToday(),
+                updated_at:           ''   // 空 = 未入力（自動生成のみ）
+            };
+        }
+
+        // 当月レコードを全メンバー分確保（A案：自動生成）
+        function ensureCurrentMonthRecords() {
+            const ym = getCurrentYearMonth();
+            let created = false;
+            members.forEach(m => {
+                if (!monthlyRecords.find(r => r.member_id === m.id && r.year_month === ym)) {
+                    monthlyRecords.push(createEmptyRecord(m.id, ym));
+                    created = true;
+                }
+            });
+            return created;
+        }
+
+        // =========================================================
+        // 月次実績：データ永続化
+        // =========================================================
+        async function loadMonthlyRecords() {
+            try {
+                const res  = await fetch(`${GAS_URL}?key=${MONTHLY_KEY}`);
+                const data = await res.json();
+                monthlyRecords      = data.value ? JSON.parse(data.value) : [];
+                monthlyLastLoadedAt = data.updated_at;
+                monthlyLoadFailed   = false;
+            } catch (e) {
+                console.warn('月次データ読み込み失敗', e);
+                monthlyRecords    = [];
+                monthlyLoadFailed = true;   // 保存処理をすべてブロックするフラグ
+            }
+        }
+
+        // UIフィードバックつき保存（モーダルの保存ボタン向け）
+        async function saveMonthlyRecords() {
+            // 読み込み失敗時はデータ破壊防止のため保存を一切行わない
+            if (monthlyLoadFailed) {
+                alert('月次データの読み込みに失敗しています。\nページを更新してから再度操作してください。');
+                const btn = document.getElementById('monthlySaveBtn');
+                if (btn) { btn.textContent = '保存'; btn.disabled = false; }
+                return false;
+            }
+
+            const btn = document.getElementById('monthlySaveBtn');
+            if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+            try {
+                const check  = await fetch(`${GAS_URL}?key=${MONTHLY_KEY}`);
+                const latest = await check.json();
+                if (latest.updated_at && latest.updated_at !== monthlyLastLoadedAt) {
+                    // 競合時は保存拒否＋リロード案内に固定（上書き選択肢は提供しない）
+                    const t = new Date(latest.updated_at).toLocaleString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+                    alert(`他のユーザーが先に更新しました（${t}）。\nページを更新して最新データを確認してから、再度入力してください。`);
+                    if (btn) { btn.textContent = '保存'; btn.disabled = false; }
+                    return false;
+                }
+                const payload = JSON.stringify(monthlyRecords);
+                console.log('[monthly] payload length', payload.length);
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ key: MONTHLY_KEY, value: payload })
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    console.error('[monthly] save failed', { key: MONTHLY_KEY, status: res.status, body: text });
+                    throw new Error(`monthly save failed: ${res.status}`);
+                }
+                monthlyLastLoadedAt = new Date().toISOString();
+                if (btn) { btn.textContent = '保存'; btn.disabled = false; }
+                return true;
+            } catch (e) {
+                console.error('monthly save failed', e);
+                alert('保存に失敗しました。通信状態を確認してください。');
+                if (btn) { btn.textContent = '保存'; btn.disabled = false; }
+                return false;
+            }
+        }
+
+        // UIなしの静かな保存（自動生成レコードの初期保存向け）
+        async function saveMonthlyRecordsQuiet() {
+            // 読み込み失敗時は空データで既存データを上書きしないようガード
+            if (monthlyLoadFailed) return;
+            try {
+                const payload = JSON.stringify(monthlyRecords);
+                console.log('[monthly] payload length', payload.length);
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ key: MONTHLY_KEY, value: payload })
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    console.warn('[monthly] quiet save failed', { key: MONTHLY_KEY, status: res.status, body: text });
+                    throw new Error(`monthly quiet save failed: ${res.status}`);
+                }
+                monthlyLastLoadedAt = new Date().toISOString();
+            } catch (e) {
+                console.warn('月次データ自動保存失敗', { key: MONTHLY_KEY, error: e });
+            }
+        }
+
+        // =========================================================
+        // タブ切り替え
+        // =========================================================
+        function switchTab(tab) {
+            const isMonthly = (tab === 'monthly');
+            document.getElementById('kadouSection').style.display   = isMonthly ? 'none' : '';
+            document.getElementById('monthlySection').style.display = isMonthly ? ''     : 'none';
+            document.getElementById('addMemberBtn').style.display   = isMonthly ? 'none' : '';
+            document.getElementById('teamFilter').style.display     = isMonthly ? 'none' : '';
+            document.getElementById('tabKadou').classList.toggle('active',   !isMonthly);
+            document.getElementById('tabMonthly').classList.toggle('active',  isMonthly);
+
+            if (isMonthly) {
+                currentYearMonth = getCurrentYearMonth();
+                ensureCurrentMonthRecords();
+                populateMonthlyTeamSelect();
+                updateMonthDisplay();
+                renderMonthlyTable();
+            }
+        }
+
+        // =========================================================
+        // 月ナビゲーション
+        // =========================================================
+        function changeMonth(delta) {
+            const candidate = shiftYearMonth(currentYearMonth, delta);
+            if (candidate > getCurrentYearMonth()) return;  // 未来月は不可
+            currentYearMonth = candidate;
+            updateMonthDisplay();
+            renderMonthlyTable();
+        }
+
+        function updateMonthDisplay() {
+            document.getElementById('monthDisplay').textContent  = getYearMonthLabel(currentYearMonth);
+            document.getElementById('monthNextBtn').disabled     = (currentYearMonth >= getCurrentYearMonth());
+        }
+
+        // =========================================================
+        // チーム選択肢の設定
         // =========================================================
         function populateTeamSelects() {
-            // フィルタ
             const filter = document.getElementById('teamFilter');
             filter.innerHTML = '<option value="">全てのチーム</option>';
             TEAMS.forEach(t => {
@@ -781,8 +1324,6 @@
                 o.value = t; o.textContent = t;
                 filter.appendChild(o);
             });
-
-            // モーダル
             const teamInput = document.getElementById('teamInput');
             teamInput.innerHTML = '<option value="">選択してください</option>';
             TEAMS.forEach(t => {
@@ -792,8 +1333,20 @@
             });
         }
 
+        function populateMonthlyTeamSelect() {
+            const sel     = document.getElementById('monthlyTeamFilter');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">全てのチーム</option>';
+            TEAMS.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                sel.appendChild(o);
+            });
+            if (current) sel.value = current;
+        }
+
         // =========================================================
-        // サマリ行
+        // 稼働一覧：テーブル描画（既存）
         // =========================================================
         function updateSummaryLine() {
             const total    = members.length;
@@ -803,9 +1356,6 @@
                 `全メンバー：${total}名　｜　分類あり：${flagged}名　｜　1on1記録あり：${with1on1}名`;
         }
 
-        // =========================================================
-        // ソート（チーム → 名前の昇順）
-        // =========================================================
         function sortMembers(arr) {
             return [...arr].sort((a, b) => {
                 const ti = TEAMS.indexOf(a.team) - TEAMS.indexOf(b.team);
@@ -814,40 +1364,32 @@
             });
         }
 
-        // =========================================================
-        // テーブル描画
-        // =========================================================
         function renderTable() {
             const filterVal = document.getElementById('teamFilter').value;
-            const visible = filterVal ? members.filter(m => m.team === filterVal) : members;
-
+            const visible   = filterVal ? members.filter(m => m.team === filterVal) : members;
             updateSummaryLine();
 
             const flagCell = (val) => val
                 ? `<td class="center"><span class="flag-check">✓</span></td>`
                 : `<td class="center"><span class="flag-none">−</span></td>`;
 
-            const tbody = document.getElementById('tableBody');
+            const tbody  = document.getElementById('tableBody');
             const sorted = sortMembers(visible);
 
             tbody.innerHTML = sorted.map(m => {
-                const statusBadge = m.status_type === '待機中'
+                const statusBadge  = m.status_type === '待機中'
                     ? '<span class="badge badge-waiting">待機中</span>'
                     : '<span class="badge badge-active">稼働中</span>';
-
-                const watchCell = m.is_watch
+                const watchCell    = m.is_watch
                     ? `<td class="center"><span class="watch-icon">⚠</span></td>`
                     : `<td class="center"><span class="flag-none">−</span></td>`;
-
-                const watchNoteCell = m.watch_note
+                const watchNoteCell= m.watch_note
                     ? `<td><span class="watch-note-cell" title="${m.watch_note}">${m.watch_note}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
-
                 const oneOnOneCell = m.last_1on1
                     ? `<td class="date-cell">${m.last_1on1}</td>`
                     : `<td><span class="date-empty">−</span></td>`;
-
-                const memoCell = m.memo
+                const memoCell     = m.memo
                     ? `<td><span class="memo-text" title="${m.memo}">${m.memo}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
 
@@ -871,40 +1413,255 @@
         }
 
         // =========================================================
-        // イベント設定
+        // 月次実績：テーブル描画（新規追加）
         // =========================================================
-        function setupEventListeners() {
-            document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
-            document.getElementById('saveBtn').addEventListener('click', saveMember);
-            document.getElementById('cancelBtn').addEventListener('click', closeModal);
-            document.getElementById('deleteBtn').addEventListener('click', deleteMember);
-            document.getElementById('teamFilter').addEventListener('change', renderTable);
-            document.getElementById('modalOverlay').addEventListener('click', e => {
-                if (e.target === document.getElementById('modalOverlay')) closeModal();
-            });
-            document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') closeModal();
-                if (e.ctrlKey && e.key === 'Enter') saveMember();
-            });
+        function renderMonthlyTable() {
+            const ym        = currentYearMonth;
+            const filterVal = document.getElementById('monthlyTeamFilter').value;
+            const records   = monthlyRecords.filter(r => r.year_month === ym);
+            const ooFilter  = document.getElementById('monthlyOneOnOneFilter').value;
+            const visible   = sortMembers((filterVal ? members.filter(m => m.team === filterVal) : members).filter(m => {
+                if (ooFilter !== 'uncompleted') return true;
+                const r = records.find(x => x.member_id === m.id);
+                return !r || r.one_on_one_count <= 0;
+            }));
+
+            // サマリ
+            const total    = visible.length;
+            const entered  = visible.filter(m => { const r = records.find(x => x.member_id === m.id); return r && r.updated_at !== ''; }).length;
+            const oo_done  = visible.filter(m => { const r = records.find(x => x.member_id === m.id); return r && r.updated_at !== '' && r.one_on_one_count >= 1; }).length;
+            const rep_done = visible.filter(m => { const r = records.find(x => x.member_id === m.id); return r && r.updated_at !== '' && r.monthly_report_count >= 1; }).length;
+
+            document.getElementById('monthlySummary').textContent =
+                `対象：${total}名　｜　入力済み：${entered}名　｜　未入力：${total - entered}名　｜　1on1達成：${oo_done}名　｜　月報達成：${rep_done}名`;
+
+            // 行
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = visible.map(m => {
+                const r          = records.find(x => x.member_id === m.id) || createEmptyRecord(m.id, ym);
+                const isEntered  = r.updated_at !== '';
+                const plusTotal  = r.plus_customer + r.plus_blog + r.plus_interview;
+
+                const ooCell = `<td class="center monthly-toggle-cell" data-toggle-field="one_on_one_count" data-member-id="${m.id}">
+                    <span class="monthly-toggle-chip">${r.one_on_one_count >= 1 ? '<span class="m-ok">○</span>' : '<span class="m-ng">×</span>'}</span>
+                </td>`;
+
+                const repCell = `<td class="center monthly-toggle-cell" data-toggle-field="monthly_report_count" data-member-id="${m.id}">
+                    <span class="monthly-toggle-chip">${r.monthly_report_count >= 1 ? '<span class="m-ok">○</span>' : '<span class="m-ng">×</span>'}</span>
+                </td>`;
+
+                const numCell = (v) => isEntered
+                    ? `<td class="center">${v > 0 ? `<b>${v}</b>` : '0'}</td>`
+                    : `<td class="center"><span class="m-dash">−</span></td>`;
+
+                const plusCell = !isEntered
+                    ? `<td class="center"><span class="m-dash">−</span></td>`
+                    : plusTotal > 0
+                        ? `<td class="center"><span class="plus-total">${plusTotal}</span></td>`
+                        : `<td class="center">0</td>`;
+
+                const memoCell = isEntered && r.memo
+                    ? `<td><span class="memo-text" title="${escHtml(r.memo)}">${escHtml(r.memo)}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+
+                const statBadge = isEntered
+                    ? `<td class="center"><span class="badge-entered">入力済</span></td>`
+                    : `<td class="center"><span class="badge-pending">未入力</span></td>`;
+
+                return `<tr class="${isEntered ? '' : 'monthly-row-pending'}" data-member-id="${m.id}">
+                    <td class="name-history-link" data-member-id="${m.id}">${escHtml(m.name)}</td>
+                    <td class="team-cell">${escHtml(m.team)}</td>
+                    ${ooCell}${repCell}
+                    ${numCell(r.plus_customer)}${numCell(r.plus_blog)}${numCell(r.plus_interview)}
+                    ${plusCell}${memoCell}${statBadge}
+                </tr>`;
+            }).join('');
+
+            // イベント委譲（名前クリック→履歴 / 行クリック→編集）
+            tbody.onclick = (e) => {
+                const nameEl = e.target.closest('.name-history-link');
+                if (nameEl) { openHistoryModal(nameEl.dataset.memberId); return; }
+                const toggleEl = e.target.closest('[data-toggle-field]');
+                if (toggleEl) {
+                    const memberId = toggleEl.dataset.memberId;
+                    const field = toggleEl.dataset.toggleField;
+                    const rid = `${memberId}__${ym}`;
+                    const idx = monthlyRecords.findIndex(r => r.id === rid);
+                    const base = idx >= 0 ? monthlyRecords[idx] : createEmptyRecord(memberId, ym);
+                    const before = { ...base };
+                    const updated = {
+                        ...base,
+                        [field]: base[field] >= 1 ? 0 : 1,
+                        updated_at: new Date().toISOString()
+                    };
+                    if (idx >= 0) { monthlyRecords[idx] = updated; } else { monthlyRecords.push(updated); }
+                    renderMonthlyTable();
+                    saveMonthlyRecords().then(ok => {
+                        if (ok === false) {
+                            const rollbackIdx = monthlyRecords.findIndex(r => r.id === rid);
+                            if (rollbackIdx >= 0) { monthlyRecords[rollbackIdx] = before; }
+                            renderMonthlyTable();
+                        }
+                    });
+                    return;
+                }
+                const row = e.target.closest('tr[data-member-id]');
+                if (row) openMonthlyEditModal(row.dataset.memberId);
+            };
+        }
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
         // =========================================================
-        // モーダル操作
+        // 月次実績：編集モーダル
+        // =========================================================
+        function openMonthlyEditModal(memberId) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            const ym = currentYearMonth;
+            const r  = monthlyRecords.find(x => x.member_id === memberId && x.year_month === ym)
+                       || createEmptyRecord(memberId, ym);
+
+            editingMonthlyMemberId = memberId;
+            document.getElementById('monthlyModalTitle').textContent =
+                `${member.name}（${getYearMonthLabel(ym)}）`;
+            document.getElementById('m1on1').value     = r.one_on_one_count >= 1 ? '1' : '0';
+            document.getElementById('mReport').value   = r.monthly_report_count >= 1 ? '1' : '0';
+            document.getElementById('mCustomer').value = r.plus_customer;
+            document.getElementById('mBlog').value     = r.plus_blog;
+            document.getElementById('mInterview').value= r.plus_interview;
+            document.getElementById('mMemo').value     = r.memo;
+
+            document.getElementById('monthlyModalOverlay').classList.add('visible');
+            setTimeout(() => document.getElementById('m1on1').focus(), 50);
+        }
+
+        function closeMonthlyModal() {
+            document.getElementById('monthlyModalOverlay').classList.remove('visible');
+            editingMonthlyMemberId = null;
+        }
+
+        async function saveMonthlyRecord() {
+            if (!editingMonthlyMemberId) return;
+            const ym  = currentYearMonth;
+            const rid = `${editingMonthlyMemberId}__${ym}`;
+            const idx = monthlyRecords.findIndex(r => r.id === rid);
+            const base = idx >= 0 ? monthlyRecords[idx] : createEmptyRecord(editingMonthlyMemberId, ym);
+
+            const updated = {
+                ...base,
+                one_on_one_count:     parseInt(document.getElementById('m1on1').value, 10)      >= 1 ? 1 : 0,
+                monthly_report_count: parseInt(document.getElementById('mReport').value, 10)    >= 1 ? 1 : 0,
+                plus_customer:        parseInt(document.getElementById('mCustomer').value)  || 0,
+                plus_blog:            parseInt(document.getElementById('mBlog').value)      || 0,
+                plus_interview:       parseInt(document.getElementById('mInterview').value) || 0,
+                memo:                 document.getElementById('mMemo').value.trim(),
+                updated_at:           new Date().toISOString()
+            };
+
+            const before = { ...base };
+            if (idx >= 0) { monthlyRecords[idx] = updated; } else { monthlyRecords.push(updated); }
+
+            const ok = await saveMonthlyRecords();
+            if (ok !== false) {
+                renderMonthlyTable();
+                closeMonthlyModal();
+            } else {
+                if (idx >= 0) { monthlyRecords[idx] = before; }
+                else { monthlyRecords = monthlyRecords.filter(r => r.id !== rid); }
+            }
+        }
+
+        // カウンター ＋/− ボタン
+        function adjust(inputId, delta) {
+            const el = document.getElementById(inputId);
+            el.value = Math.max(0, (parseInt(el.value) || 0) + delta);
+        }
+
+        // =========================================================
+        // 月次実績：履歴モーダル
+        // =========================================================
+        function openHistoryModal(memberId) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+
+            const hist = monthlyRecords
+                .filter(r => r.member_id === memberId && r.updated_at !== '')
+                .sort((a, b) => b.year_month.localeCompare(a.year_month))
+                .slice(0, 18);
+
+            document.getElementById('historyModalTitle').textContent = `${member.name}　月次実績 履歴`;
+
+            if (hist.length === 0) {
+                document.getElementById('historyContent').innerHTML =
+                    `<p class="history-empty">まだ記録がありません</p>`;
+            } else {
+                const rows = hist.map(r => {
+                    const oo  = r.one_on_one_count >= 1
+                        ? `<span class="m-ok">○</span>`
+                        : `<span class="m-ng">×</span>`;
+                    const rep = r.monthly_report_count >= 1
+                        ? `<span class="m-ok">○</span>`
+                        : `<span class="m-ng">×</span>`;
+                    const plus = r.plus_customer + r.plus_blog + r.plus_interview;
+                    return `<tr>
+                        <td class="history-month">${getYearMonthLabel(r.year_month)}</td>
+                        <td class="center">${oo}</td>
+                        <td class="center">${rep}</td>
+                        <td class="center">${r.plus_customer}</td>
+                        <td class="center">${r.plus_blog}</td>
+                        <td class="center">${r.plus_interview}</td>
+                        <td class="center">${plus > 0 ? `<span class="plus-total">${plus}</span>` : '0'}</td>
+                        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b"
+                            title="${escHtml(r.memo)}">${escHtml(r.memo) || '−'}</td>
+                    </tr>`;
+                }).join('');
+
+                document.getElementById('historyContent').innerHTML = `
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>月</th>
+                                <th class="center">1on1</th>
+                                <th class="center">月報</th>
+                                <th class="center">顧客</th>
+                                <th class="center">ブログ</th>
+                                <th class="center">面接</th>
+                                <th class="center">＋計</th>
+                                <th>メモ</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>`;
+            }
+            document.getElementById('historyModalOverlay').classList.add('visible');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModalOverlay').classList.remove('visible');
+        }
+
+        // =========================================================
+        // 稼働一覧：モーダル操作（既存）
         // =========================================================
         function openAddModal() {
             editingMemberId = null;
-            document.getElementById('modalTitle').textContent = 'メンバー追加';
-            document.getElementById('nameInput').value = '';
-            document.getElementById('teamInput').value = '';
-            document.getElementById('statusTypeInput').value = '稼働中';
-            document.getElementById('cbIsWatch').checked = false;
-            document.getElementById('watchNoteInput').value = '';
-            document.getElementById('cbRoleMismatch').checked = false;
-            document.getElementById('cbSkillIssue').checked = false;
-            document.getElementById('cbConcern').checked = false;
-            document.getElementById('lastOneOnOne').value = '';
-            document.getElementById('memoInput').value = '';
-            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('modalTitle').textContent       = 'メンバー追加';
+            document.getElementById('nameInput').value              = '';
+            document.getElementById('teamInput').value              = '';
+            document.getElementById('statusTypeInput').value        = '稼働中';
+            document.getElementById('cbIsWatch').checked            = false;
+            document.getElementById('watchNoteInput').value         = '';
+            document.getElementById('cbRoleMismatch').checked       = false;
+            document.getElementById('cbSkillIssue').checked         = false;
+            document.getElementById('cbConcern').checked            = false;
+            document.getElementById('lastOneOnOne').value           = '';
+            document.getElementById('memoInput').value              = '';
+            document.getElementById('deleteBtn').style.display      = 'none';
             document.getElementById('modalOverlay').classList.add('visible');
             setTimeout(() => document.getElementById('nameInput').focus(), 50);
         }
@@ -913,18 +1670,18 @@
             const m = members.find(x => x.id === id);
             if (!m) return;
             editingMemberId = id;
-            document.getElementById('modalTitle').textContent = m.name + ' を編集';
-            document.getElementById('nameInput').value = m.name;
-            document.getElementById('teamInput').value = m.team;
-            document.getElementById('statusTypeInput').value = m.status_type;
-            document.getElementById('cbIsWatch').checked    = !!m.is_watch;
-            document.getElementById('watchNoteInput').value = m.watch_note || '';
-            document.getElementById('cbRoleMismatch').checked = !!m.role_mismatch;
-            document.getElementById('cbSkillIssue').checked   = !!m.skill_issue;
-            document.getElementById('cbConcern').checked      = !!m.concern;
-            document.getElementById('lastOneOnOne').value = m.last_1on1 || '';
-            document.getElementById('memoInput').value = m.memo || '';
-            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('modalTitle').textContent       = m.name + ' を編集';
+            document.getElementById('nameInput').value              = m.name;
+            document.getElementById('teamInput').value              = m.team;
+            document.getElementById('statusTypeInput').value        = m.status_type;
+            document.getElementById('cbIsWatch').checked            = !!m.is_watch;
+            document.getElementById('watchNoteInput').value         = m.watch_note || '';
+            document.getElementById('cbRoleMismatch').checked       = !!m.role_mismatch;
+            document.getElementById('cbSkillIssue').checked         = !!m.skill_issue;
+            document.getElementById('cbConcern').checked            = !!m.concern;
+            document.getElementById('lastOneOnOne').value           = m.last_1on1 || '';
+            document.getElementById('memoInput').value              = m.memo || '';
+            document.getElementById('deleteBtn').style.display      = 'block';
             document.getElementById('modalOverlay').classList.add('visible');
         }
 
@@ -933,39 +1690,30 @@
             editingMemberId = null;
         }
 
-        // =========================================================
-        // 保存・削除
-        // =========================================================
         async function saveMember() {
             const name = document.getElementById('nameInput').value.trim();
             const team = document.getElementById('teamInput').value;
-            if (!name || !team) {
-                alert('名前とチームは必須です');
-                return;
-            }
-
+            if (!name || !team) { alert('名前とチームは必須です'); return; }
             const record = {
-                id:           editingMemberId || ('m_' + Date.now()),
-                name:         name,
-                team:         team,
-                status_type:  document.getElementById('statusTypeInput').value,
-                is_watch:     document.getElementById('cbIsWatch').checked,
-                watch_note:   document.getElementById('watchNoteInput').value.trim(),
+                id:            editingMemberId || ('m_' + Date.now()),
+                name,
+                team,
+                status_type:   document.getElementById('statusTypeInput').value,
+                is_watch:      document.getElementById('cbIsWatch').checked,
+                watch_note:    document.getElementById('watchNoteInput').value.trim(),
                 role_mismatch: document.getElementById('cbRoleMismatch').checked,
                 skill_issue:   document.getElementById('cbSkillIssue').checked,
                 concern:       document.getElementById('cbConcern').checked,
-                last_1on1:    document.getElementById('lastOneOnOne').value,
-                memo:         document.getElementById('memoInput').value.trim(),
-                updated_at:   getToday()
+                last_1on1:     document.getElementById('lastOneOnOne').value,
+                memo:          document.getElementById('memoInput').value.trim(),
+                updated_at:    getToday()
             };
-
             if (editingMemberId) {
                 const idx = members.findIndex(m => m.id === editingMemberId);
                 if (idx >= 0) members[idx] = record;
             } else {
                 members.push(record);
             }
-
             await saveMembers();
             renderTable();
             closeModal();
@@ -979,6 +1727,54 @@
             await saveMembers();
             renderTable();
             closeModal();
+        }
+
+        // =========================================================
+        // イベント設定
+        // =========================================================
+        function setupEventListeners() {
+            // タブ
+            document.getElementById('tabKadou').addEventListener('click',   () => switchTab('kadou'));
+            document.getElementById('tabMonthly').addEventListener('click', () => switchTab('monthly'));
+
+            // 稼働一覧（既存）
+            document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
+            document.getElementById('saveBtn').addEventListener('click',      saveMember);
+            document.getElementById('cancelBtn').addEventListener('click',    closeModal);
+            document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
+            document.getElementById('teamFilter').addEventListener('change',  renderTable);
+            document.getElementById('modalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('modalOverlay')) closeModal();
+            });
+
+            // 月次実績（新規）
+            document.getElementById('monthPrevBtn').addEventListener('click',    () => changeMonth(-1));
+            document.getElementById('monthNextBtn').addEventListener('click',    () => changeMonth(1));
+            document.getElementById('monthlyTeamFilter').addEventListener('change', renderMonthlyTable);
+            document.getElementById('monthlyOneOnOneFilter').addEventListener('change', renderMonthlyTable);
+            document.getElementById('monthlySaveBtn').addEventListener('click',  saveMonthlyRecord);
+            document.getElementById('monthlyCancelBtn').addEventListener('click', closeMonthlyModal);
+            document.getElementById('historyCloseBtn').addEventListener('click',  closeHistoryModal);
+
+            document.getElementById('monthlyModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('monthlyModalOverlay')) closeMonthlyModal();
+            });
+            document.getElementById('historyModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('historyModalOverlay')) closeHistoryModal();
+            });
+
+            // キーボードショートカット
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    closeMonthlyModal();
+                    closeHistoryModal();
+                }
+                if (e.ctrlKey && e.key === 'Enter') {
+                    if (document.getElementById('modalOverlay').classList.contains('visible'))        saveMember();
+                    if (document.getElementById('monthlyModalOverlay').classList.contains('visible')) saveMonthlyRecord();
+                }
+            });
         }
 
         // =========================================================
