@@ -1,0 +1,56 @@
+{
+  "source_xlsx": "C:\\Users\\kochi\\Documents\\GraNavi\\granavi_kadou\\部長1on1_2025年度実績.xlsx",
+  "source_html": "C:\\Users\\kochi\\Documents\\GraNavi\\granavi_kadou\\kadou.html",
+  "input_row_count": 46,
+  "generated_record_count": 499,
+  "skipped_month_count": 17,
+  "unmatched_count": 3,
+  "duplicate_name_hit_count": 0,
+  "rules": {
+    "target_scope": "リーダー1on1のみ",
+    "month_columns": [
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O"
+    ],
+    "month_mapping": {
+      "D": "2025-04",
+      "E": "2025-05",
+      "F": "2025-06",
+      "G": "2025-07",
+      "H": "2025-08",
+      "I": "2025-09",
+      "J": "2025-10",
+      "K": "2025-11",
+      "L": "2025-12",
+      "M": "2026-01",
+      "N": "2026-02",
+      "O": "2026-03"
+    },
+    "cell_value_mapping": {
+      "◯": 1,
+      "◯●": 1,
+      "●": 0,
+      "空白": 0
+    },
+    "skip_values": [
+      "待機",
+      "入社月",
+      "対象外",
+      "退職"
+    ]
+  },
+  "apply_executed": true,
+  "existing_record_count": 47,
+  "merged_record_count": 544,
+  "post_verify_count": 544
+}
