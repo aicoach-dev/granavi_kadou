@@ -127,6 +127,112 @@
             color: #64748b;
         }
 
+        .summary-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+
+        .summary-actions .summary-line {
+            margin-bottom: 0;
+            flex: 1 1 320px;
+        }
+
+        .test-base-date-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+
+        .test-base-date-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .test-base-date-label {
+            font-size: 0.8125rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .test-base-date-input {
+            padding: 0.45rem 0.65rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: white;
+            color: #1e293b;
+            font-size: 0.8125rem;
+            font-family: inherit;
+        }
+
+        .test-base-date-banner {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid #f59e0b;
+            border-radius: 0.375rem;
+            background: #fffbeb;
+            color: #92400e;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+        }
+
+        .reminder-settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+
+        .reminder-settings-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .recipient-mode-select {
+            padding: 0.45rem 0.65rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: white;
+            color: #1e293b;
+            font-size: 0.8125rem;
+            font-family: inherit;
+        }
+
+        .recipient-mode-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .subtle-action-btn {
+            padding: 0.5rem 0.875rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: white;
+            color: #334155;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+
+        .subtle-action-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
         /* ── テーブル ── */
         .table-container {
             background-color: white;
@@ -536,6 +642,10 @@
             margin-bottom: 0.875rem;
         }
 
+        .monthly-controls .subtle-action-btn {
+            margin-left: auto;
+        }
+
         .monthly-sub-filter {
             min-width: 160px;
         }
@@ -696,6 +806,122 @@
         /* 履歴モーダル */
         .modal-wide { max-width: 660px; }
 
+        .reminder-modal {
+            max-width: 780px;
+        }
+
+        .reminder-empty {
+            font-size: 0.875rem;
+            color: #475569;
+            line-height: 1.7;
+        }
+
+        .reminder-block {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.875rem;
+            background: #f8fafc;
+        }
+
+        .reminder-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .reminder-block-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .reminder-block-title {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .reminder-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .reminder-copy-btn {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            background: white;
+            color: #334155;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .reminder-copy-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .reminder-mail-btn {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #93c5fd;
+            border-radius: 0.375rem;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .reminder-mail-btn:hover {
+            background: #dbeafe;
+        }
+
+        .reminder-mail-btn:disabled {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .reminder-meta {
+            display: grid;
+            grid-template-columns: 70px 1fr;
+            gap: 0.375rem 0.75rem;
+            margin-bottom: 0.875rem;
+            font-size: 0.8125rem;
+        }
+
+        .reminder-meta-label {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .reminder-meta-value {
+            color: #334155;
+            word-break: break-word;
+        }
+
+        .reminder-body {
+            width: 100%;
+            min-height: 220px;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            background: white;
+            color: #334155;
+            font: inherit;
+            line-height: 1.65;
+            resize: vertical;
+        }
+
+        .reminder-copy-status {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
         .history-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
         .history-table th {
             padding: 0.5rem 0.625rem;
@@ -718,6 +944,121 @@
         .history-month { font-weight: 600; color: #334155; white-space: nowrap; }
         .history-empty { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.875rem; }
 
+        .recipient-settings-modal {
+            max-width: 860px;
+        }
+
+        .recipient-settings-note {
+            font-size: 0.8125rem;
+            color: #64748b;
+            margin-bottom: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .recipient-settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .recipient-settings-table th,
+        .recipient-settings-table td {
+            padding: 0.625rem;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .recipient-settings-table th {
+            color: #475569;
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .recipient-settings-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .recipient-team-name {
+            white-space: nowrap;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .recipient-settings-input {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            color: #1e293b;
+        }
+
+        .team-export-modal {
+            max-width: 760px;
+        }
+
+        .team-export-preview {
+            margin-bottom: 1rem;
+            max-height: 320px;
+            overflow: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            background: white;
+        }
+
+        .team-export-preview h3 {
+            font-size: 0.9375rem;
+            color: #1e293b;
+            margin: 0 0 0.5rem;
+        }
+
+        .team-export-preview h3:not(:first-child) {
+            margin-top: 1rem;
+        }
+
+        .team-export-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-export-preview th,
+        .team-export-preview td {
+            border: 1px solid #cbd5e1;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8125rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .team-export-preview th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .team-export-textarea {
+            width: 100%;
+            min-height: 360px;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+            color: #1e293b;
+            resize: vertical;
+            background: #f8fafc;
+        }
+
+        .team-export-copy-status {
+            font-size: 0.8125rem;
+            color: #64748b;
+            min-height: 1.2em;
+        }
+
         /* ── レスポンシブ ── */
         @media (max-width: 768px) {
             .header-content { flex-direction: column; align-items: stretch; }
@@ -727,6 +1068,15 @@
             .form-row { grid-template-columns: 1fr; }
             .checkbox-items { flex-direction: column; gap: 0.625rem; }
             .monthly-controls { flex-direction: column; align-items: stretch; }
+            .recipient-settings-table,
+            .recipient-settings-table tbody,
+            .recipient-settings-table tr,
+            .recipient-settings-table td {
+                display: block;
+                width: 100%;
+            }
+            .recipient-settings-table thead { display: none; }
+            .recipient-settings-table td { padding: 0.4rem 0; border-bottom: none; }
         }
     </style>
 </head>
@@ -739,6 +1089,7 @@
             <div class="header-controls">
                 <select class="team-filter" id="teamFilter"></select>
                 <select class="team-filter" id="kadouFocusFilter"></select>
+                <button class="subtle-action-btn" id="teamExportBtn">チーム一覧出力</button>
                 <button class="add-member-btn" id="addMemberBtn">＋ メンバー追加</button>
             </div>
         </div>
@@ -759,7 +1110,29 @@
         <div class="main-container">
             <div class="fetch-status" id="fetchStatus"></div>
             <div class="sheet-warning">⚠ このデータはグラナビ画面から更新してください。Googleスプレッドシートの直接編集は禁止です。</div>
-            <div class="summary-line" id="summaryLine"></div>
+            <div class="summary-actions">
+                <div class="summary-line" id="summaryLine"></div>
+                <button class="subtle-action-btn" id="kadouReminderBtn">未更新リマインド作成</button>
+            </div>
+            <div class="reminder-settings-row">
+                <div class="reminder-settings-controls">
+                    <span class="test-base-date-label">宛先モード</span>
+                    <select class="recipient-mode-select" id="recipientModeSelect">
+                        <option value="test">テスト</option>
+                        <option value="prod">本番</option>
+                    </select>
+                    <button type="button" class="subtle-action-btn" id="recipientSettingsBtn">宛先設定</button>
+                </div>
+                <div class="recipient-mode-hint" id="recipientModeHint"></div>
+            </div>
+            <div class="test-base-date-row">
+                <div class="test-base-date-controls">
+                    <span class="test-base-date-label">テスト基準日</span>
+                    <input type="date" class="test-base-date-input" id="testBaseDateInput">
+                    <button type="button" class="subtle-action-btn" id="clearTestBaseDateBtn">解除</button>
+                </div>
+                <div class="test-base-date-banner" id="testBaseDateBanner" style="display:none"></div>
+            </div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -800,6 +1173,7 @@
                     <option value="">全員</option>
                     <option value="uncompleted">1on1未実施のみ</option>
                 </select>
+                <button class="subtle-action-btn" id="monthlyReminderBtn">月次未入力リマインド作成</button>
             </div>
             <div class="summary-line" id="monthlySummary"></div>
             <div class="table-container">
@@ -1004,6 +1378,52 @@
         </div>
     </div>
 
+    <!-- ==============================
+         モーダル：リマインド確認
+    ============================== -->
+    <div class="modal-overlay" id="reminderModalOverlay">
+        <div class="modal modal-wide reminder-modal">
+            <h2 id="reminderModalTitle">リマインド確認</h2>
+            <div id="reminderModalContent"></div>
+            <div class="modal-footer">
+                <div class="reminder-copy-status" id="reminderCopyStatus"></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="reminderCloseBtn">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="recipientSettingsOverlay">
+        <div class="modal modal-wide recipient-settings-modal">
+            <h2>宛先設定</h2>
+            <div class="recipient-settings-note">チームごとに、テスト用宛先と本番用宛先をカンマ区切りで設定できます。</div>
+            <div id="recipientSettingsContent"></div>
+            <div class="modal-footer">
+                <div></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="recipientSettingsCancelBtn">キャンセル</button>
+                    <button class="btn-save" id="recipientSettingsSaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="teamExportModalOverlay">
+        <div class="modal modal-wide team-export-modal">
+            <h2>チーム一覧出力</h2>
+            <div id="teamExportPreview" class="team-export-preview"></div>
+            <textarea id="teamExportOutput" class="team-export-textarea" readonly></textarea>
+            <div class="modal-footer">
+                <div class="team-export-copy-status" id="teamExportCopyStatus"></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="teamExportCloseBtn">閉じる</button>
+                    <button class="btn-save" id="teamExportCopyBtn">コピー</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // =========================================================
         // 定数
@@ -1013,6 +1433,11 @@
         const TEAMS        = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
         const APP_VERSION  = 'v0.4.0';
         const GAS_URL      = 'https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec';
+        const REMINDER_PLACEHOLDER_TO = '（担当リーダー未設定）';
+        const REMINDER_PLACEHOLDER_CC = '（部長未設定）';
+        const TEST_BASE_DATE_KEY = 'kadou_test_base_date';
+        const RECIPIENT_SETTINGS_KEY = 'kadou_recipient_settings';
+        const RECIPIENT_MODE_KEY = 'kadou_recipient_mode';
 
         // =========================================================
         // 状態変数（既存）
@@ -1031,6 +1456,7 @@
         let monthlyFetchedAt       = null;
         let currentYearMonth       = getCurrentYearMonth();
         let editingMonthlyMemberId = null;
+        let recipientSettings      = {};
 
         // =========================================================
         // 初期化
@@ -1052,8 +1478,11 @@
                 // 自動保存は行わない
             }
 
+            recipientSettings = loadRecipientSettings();
             populateTeamSelects();
             setupEventListeners();
+            updateTestBaseDateUI();
+            updateRecipientModeUI();
             renderTable();
         }
 
@@ -1179,6 +1608,630 @@
 
         function getToday() {
             return new Date().toISOString().split('T')[0];
+        }
+
+        function formatLocalDate(date) {
+            return [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, '0'),
+                String(date.getDate()).padStart(2, '0')
+            ].join('-');
+        }
+
+        function isValidDateInput(value) {
+            const text = String(value || '').trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+            const date = new Date(`${text}T00:00:00`);
+            if (Number.isNaN(date.getTime())) return false;
+            return formatLocalDate(date) === text;
+        }
+
+        function getStoredTestBaseDate() {
+            try {
+                const value = localStorage.getItem(TEST_BASE_DATE_KEY);
+                return isValidDateInput(value) ? value : '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function getJudgementBaseDate() {
+            const override = getStoredTestBaseDate();
+            const base = override ? new Date(`${override}T00:00:00`) : new Date();
+            if (Number.isNaN(base.getTime())) return new Date();
+            base.setHours(0, 0, 0, 0);
+            return base;
+        }
+
+        function getJudgementToday() {
+            return formatLocalDate(getJudgementBaseDate());
+        }
+
+        function getJudgementCurrentYearMonth() {
+            return getJudgementToday().slice(0, 7);
+        }
+
+        function setTestBaseDate(value) {
+            try {
+                if (isValidDateInput(value)) {
+                    localStorage.setItem(TEST_BASE_DATE_KEY, value);
+                } else {
+                    localStorage.removeItem(TEST_BASE_DATE_KEY);
+                }
+            } catch (e) {
+                // ignore localStorage failures and keep normal mode
+            }
+        }
+
+        function clearTestBaseDate() {
+            try {
+                localStorage.removeItem(TEST_BASE_DATE_KEY);
+            } catch (e) {
+                // ignore localStorage failures and keep normal mode
+            }
+        }
+
+        function updateTestBaseDateUI() {
+            const input = document.getElementById('testBaseDateInput');
+            const banner = document.getElementById('testBaseDateBanner');
+            if (!input || !banner) return;
+
+            const override = getStoredTestBaseDate();
+            input.value = override;
+
+            if (!override) {
+                banner.style.display = 'none';
+                banner.textContent = '';
+                return;
+            }
+
+            banner.style.display = 'block';
+            banner.textContent = `テスト基準日適用中: ${override} ※ テスト表示です。本番日付ではありません`;
+        }
+
+        function applyTestBaseDateOverride(value) {
+            setTestBaseDate(value);
+            updateTestBaseDateUI();
+            renderTable();
+            renderMonthlyTable();
+        }
+
+        function parseDateValue(dateStr) {
+            const text = String(dateStr || '').trim();
+            if (!text) return null;
+            const normalized = text.length === 10 ? `${text}T00:00:00` : text;
+            const date = new Date(normalized);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function getDaysSince(dateStr) {
+            const date = parseDateValue(dateStr);
+            if (!date) return null;
+            const today = getJudgementBaseDate();
+            today.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0);
+            return Math.floor((today - date) / 86400000);
+        }
+
+        function getDefaultRecipientSettings() {
+            return TEAMS.reduce((acc, team) => {
+                acc[team] = { test: '', prod: '' };
+                return acc;
+            }, {});
+        }
+
+        function normalizeRecipientText(value) {
+            return String(value || '')
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean)
+                .join(', ');
+        }
+
+        function parseRecipientList(value) {
+            return String(value || '')
+                .split(',')
+                .map(x => x.trim())
+                .filter(Boolean);
+        }
+
+        function loadRecipientSettings() {
+            const defaults = getDefaultRecipientSettings();
+            try {
+                const raw = localStorage.getItem(RECIPIENT_SETTINGS_KEY);
+                if (!raw) return defaults;
+                const parsed = JSON.parse(raw);
+                TEAMS.forEach(team => {
+                    const current = parsed && typeof parsed === 'object' ? parsed[team] : null;
+                    defaults[team] = {
+                        test: normalizeRecipientText(current && current.test),
+                        prod: normalizeRecipientText(current && current.prod)
+                    };
+                });
+            } catch (e) {
+                return defaults;
+            }
+            return defaults;
+        }
+
+        function saveRecipientSettings(settings) {
+            try {
+                localStorage.setItem(RECIPIENT_SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {
+                // ignore localStorage failures
+            }
+        }
+
+        function getRecipientMode() {
+            try {
+                const mode = localStorage.getItem(RECIPIENT_MODE_KEY);
+                return mode === 'prod' ? 'prod' : 'test';
+            } catch (e) {
+                return 'test';
+            }
+        }
+
+        function setRecipientMode(mode) {
+            const normalized = mode === 'prod' ? 'prod' : 'test';
+            try {
+                localStorage.setItem(RECIPIENT_MODE_KEY, normalized);
+            } catch (e) {
+                // ignore localStorage failures
+            }
+        }
+
+        function updateRecipientModeUI() {
+            const select = document.getElementById('recipientModeSelect');
+            const hint = document.getElementById('recipientModeHint');
+            if (!select || !hint) return;
+            const mode = getRecipientMode();
+            select.value = mode;
+            hint.textContent = mode === 'prod'
+                ? '本番用宛先を To に使用します'
+                : 'テスト用宛先を To に使用します';
+        }
+
+        function getRecipientSettingForTeam(team) {
+            const defaults = { test: '', prod: '' };
+            const current = recipientSettings && recipientSettings[team] ? recipientSettings[team] : defaults;
+            return {
+                test: normalizeRecipientText(current.test),
+                prod: normalizeRecipientText(current.prod)
+            };
+        }
+
+        function buildRecipientSettingsRows() {
+            return TEAMS.map(team => {
+                const setting = getRecipientSettingForTeam(team);
+                return `
+                    <tr>
+                        <td class="recipient-team-name">${escHtml(team)}</td>
+                        <td><input type="text" class="recipient-settings-input" data-recipient-team="${escapeAttr(team)}" data-recipient-mode="test" value="${escapeAttr(setting.test)}" placeholder="dummy@example.com"></td>
+                        <td><input type="text" class="recipient-settings-input" data-recipient-team="${escapeAttr(team)}" data-recipient-mode="prod" value="${escapeAttr(setting.prod)}" placeholder="leader@example.com, subleader@example.com"></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openRecipientSettingsModal() {
+            const content = document.getElementById('recipientSettingsContent');
+            content.innerHTML = `
+                <table class="recipient-settings-table">
+                    <thead>
+                        <tr>
+                            <th>リーダー名</th>
+                            <th>テスト用宛先</th>
+                            <th>本番用宛先</th>
+                        </tr>
+                    </thead>
+                    <tbody>${buildRecipientSettingsRows()}</tbody>
+                </table>
+            `;
+            document.getElementById('recipientSettingsOverlay').classList.add('visible');
+        }
+
+        function closeRecipientSettingsModal() {
+            document.getElementById('recipientSettingsOverlay').classList.remove('visible');
+        }
+
+        function saveRecipientSettingsFromModal() {
+            const next = getDefaultRecipientSettings();
+            document.querySelectorAll('[data-recipient-team]').forEach(input => {
+                const team = input.dataset.recipientTeam;
+                const mode = input.dataset.recipientMode;
+                if (!next[team]) next[team] = { test: '', prod: '' };
+                next[team][mode] = normalizeRecipientText(input.value);
+            });
+            recipientSettings = next;
+            saveRecipientSettings(next);
+            closeRecipientSettingsModal();
+        }
+
+        function getReminderRecipient(member) {
+            const team = String(member && member.team || '').trim();
+            const mode = getRecipientMode();
+            const setting = getRecipientSettingForTeam(team);
+            const to = setting[mode] || REMINDER_PLACEHOLDER_TO;
+            return {
+                key: team || 'unassigned',
+                leaderName: team,
+                to,
+                cc: REMINDER_PLACEHOLDER_CC,
+                salutation: to === REMINDER_PLACEHOLDER_TO ? REMINDER_PLACEHOLDER_TO : `${team} ご担当者様`
+            };
+        }
+
+        function buildReminderText(reminder) {
+            return [
+                `To: ${reminder.to}`,
+                `CC: ${reminder.cc}`,
+                `件名: ${reminder.subject}`,
+                '',
+                reminder.body
+            ].join('\n');
+        }
+
+        function hasValidReminderAddress(value, placeholder) {
+            const text = String(value || '').trim();
+            return text !== '' && text !== placeholder;
+        }
+
+        function canCreateReminderMail(reminder) {
+            return hasValidReminderAddress(reminder.to, REMINDER_PLACEHOLDER_TO)
+                && hasValidReminderAddress(reminder.cc, REMINDER_PLACEHOLDER_CC);
+        }
+
+        function buildReminderMailtoUrl(reminder) {
+            if (!canCreateReminderMail(reminder)) return '';
+            const toList = parseRecipientList(reminder.to);
+            if (!toList.length) return '';
+
+            const params = [
+                `cc=${encodeURIComponent(reminder.cc)}`,
+                `subject=${encodeURIComponent(reminder.subject)}`,
+                `body=${encodeURIComponent(reminder.body)}`
+            ];
+            return `mailto:${toList.join(',')}?${params.join('&')}`;
+        }
+
+        function escapeAttr(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function collectWeeklyReminderGroups() {
+            const staleMembers = members
+                .map(member => {
+                    const days = getDaysSince(member.updated_at);
+                    if (days === null || days < 7) return null;
+                    return { member, days, recipient: getReminderRecipient(member) };
+                })
+                .filter(Boolean);
+
+            const groups = new Map();
+            staleMembers.forEach(item => {
+                const key = item.recipient.key;
+                if (!groups.has(key)) {
+                    groups.set(key, { recipient: item.recipient, items: [] });
+                }
+                groups.get(key).items.push(item);
+            });
+
+            return Array.from(groups.values()).map(group => {
+                const lines = sortMembers(group.items.map(x => x.member)).map(member => {
+                    const item = group.items.find(x => x.member.id === member.id);
+                    return `・${member.name}（更新なし ${item.days}日）`;
+                });
+                const body = [
+                    group.recipient.salutation,
+                    '',
+                    'お疲れ様です。',
+                    '',
+                    '以下のメンバーについて、稼働一覧の更新が確認できていません。',
+                    '',
+                    ...lines,
+                    '',
+                    '週次更新のタイミングかと思いますので、',
+                    '未対応の場合はご確認をお願いします。',
+                    '',
+                    'よろしくお願いします。'
+                ].join('\n');
+
+                return {
+                    leaderLabel: group.recipient.leaderName || REMINDER_PLACEHOLDER_TO,
+                    to: group.recipient.to,
+                    cc: group.recipient.cc,
+                    subject: '【グラナビ】稼働一覧 未更新のメンバーがあります',
+                    body
+                };
+            });
+        }
+
+        function isMonthlyReminderReady() {
+            return getJudgementBaseDate().getDate() >= 25;
+        }
+
+        function collectMonthlyReminderGroups() {
+            if (!isMonthlyReminderReady()) return [];
+
+            const ym = getJudgementCurrentYearMonth();
+            const pendingMembers = members
+                .map(member => {
+                    const record = monthlyRecords.find(r => r.member_id === member.id && r.year_month === ym)
+                        || createEmptyRecord(member.id, ym);
+                    if (record.updated_at !== '') return null;
+                    return { member, recipient: getReminderRecipient(member) };
+                })
+                .filter(Boolean);
+
+            const groups = new Map();
+            pendingMembers.forEach(item => {
+                const key = item.recipient.key;
+                if (!groups.has(key)) {
+                    groups.set(key, { recipient: item.recipient, items: [] });
+                }
+                groups.get(key).items.push(item);
+            });
+
+            return Array.from(groups.values()).map(group => {
+                const lines = sortMembers(group.items.map(x => x.member)).map(member => `・${member.name}`);
+                const body = [
+                    group.recipient.salutation,
+                    '',
+                    'お疲れ様です。',
+                    '',
+                    '以下のメンバーについて、今月の月次実績が未入力の状態です。',
+                    '',
+                    ...lines,
+                    '',
+                    '月末が近づいておりますので、',
+                    '未入力の場合はご対応をお願いします。',
+                    '',
+                    'よろしくお願いします。'
+                ].join('\n');
+
+                return {
+                    leaderLabel: group.recipient.leaderName || REMINDER_PLACEHOLDER_TO,
+                    to: group.recipient.to,
+                    cc: group.recipient.cc,
+                    subject: '【グラナビ】月次実績 未入力のメンバーがあります',
+                    body
+                };
+            });
+        }
+
+        function openReminderModal(title, reminders, emptyMessage) {
+            document.getElementById('reminderModalTitle').textContent = title;
+            document.getElementById('reminderCopyStatus').textContent = '';
+
+            const content = document.getElementById('reminderModalContent');
+            if (!reminders.length) {
+                content.innerHTML = `<p class="reminder-empty">${escHtml(emptyMessage)}</p>`;
+            } else {
+                content.innerHTML = reminders.map((reminder, idx) => `
+                    <div class="reminder-block">
+                        <div class="reminder-block-header">
+                            <div class="reminder-block-title">${escHtml(reminder.leaderLabel)}</div>
+                            <div class="reminder-actions">
+                                <button class="reminder-copy-btn" data-copy-index="${idx}">コピー</button>
+                                <button class="reminder-mail-btn" data-mail-index="${idx}" ${canCreateReminderMail(reminder) ? '' : 'disabled'}>メール作成</button>
+                            </div>
+                        </div>
+                        <div class="reminder-meta">
+                            <div class="reminder-meta-label">To</div>
+                            <div class="reminder-meta-value">${escHtml(reminder.to)}</div>
+                            <div class="reminder-meta-label">CC</div>
+                            <div class="reminder-meta-value">${escHtml(reminder.cc)}</div>
+                            <div class="reminder-meta-label">件名</div>
+                            <div class="reminder-meta-value">${escHtml(reminder.subject)}</div>
+                        </div>
+                        <textarea class="reminder-body" readonly>${reminder.body}</textarea>
+                    </div>
+                `).join('');
+
+                content.querySelectorAll('[data-copy-index]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const reminder = reminders[parseInt(btn.dataset.copyIndex, 10)];
+                        copyReminderToClipboard(buildReminderText(reminder));
+                    });
+                });
+
+                content.querySelectorAll('[data-mail-index]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const reminder = reminders[parseInt(btn.dataset.mailIndex, 10)];
+                        const mailtoUrl = buildReminderMailtoUrl(reminder);
+                        if (!mailtoUrl) {
+                            document.getElementById('reminderCopyStatus').textContent = 'To / CC 未設定のためメール作成できません';
+                            return;
+                        }
+                        document.getElementById('reminderCopyStatus').textContent = '';
+                        window.location.href = mailtoUrl;
+                    });
+                });
+            }
+
+            document.getElementById('reminderModalOverlay').classList.add('visible');
+        }
+
+        function closeReminderModal() {
+            document.getElementById('reminderModalOverlay').classList.remove('visible');
+        }
+
+        async function copyTextToClipboard(text) {
+            let copied = false;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    copied = true;
+                }
+            } catch (e) {
+                copied = false;
+            }
+
+            if (!copied) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                copied = document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+
+            return copied;
+        }
+
+        async function copyReminderToClipboard(text) {
+            const copied = await copyTextToClipboard(text);
+            document.getElementById('reminderCopyStatus').textContent = copied
+                ? 'コピーしました'
+                : 'コピーに失敗しました';
+        }
+
+        function openKadouReminderModal() {
+            const reminders = collectWeeklyReminderGroups();
+            openReminderModal(
+                '稼働一覧リマインド確認',
+                reminders,
+                '未更新リマインドの対象はありません。'
+            );
+        }
+
+        function openMonthlyReminderModal() {
+            if (!isMonthlyReminderReady()) {
+                openReminderModal(
+                    '月次未入力リマインド確認',
+                    [],
+                    '月次未入力リマインドは毎月25日以降に確認できます。'
+                );
+                return;
+            }
+
+            const reminders = collectMonthlyReminderGroups();
+            openReminderModal(
+                '月次未入力リマインド確認',
+                reminders,
+                '月次未入力リマインドの対象はありません。'
+            );
+        }
+
+        function getTeamExportMark(value, markedSymbol) {
+            return value ? markedSymbol : '－';
+        }
+
+        function getTeamExportOneOnOneLabel(member) {
+            return (member.last_1on1 || '').trim() ? '済' : '未';
+        }
+
+        function getTeamExportTargetMembers() {
+            const selectedTeam = document.getElementById('teamFilter').value;
+            if (!selectedTeam) return members;
+            return members.filter(member => member.team === selectedTeam);
+        }
+
+        function getTeamExportGroups(targetMembers) {
+            const groupedTeams = [];
+            const teamMap = new Map();
+
+            targetMembers.forEach(member => {
+                const teamName = member.team || '';
+                if (!teamMap.has(teamName)) {
+                    const group = { teamName, members: [] };
+                    teamMap.set(teamName, group);
+                    groupedTeams.push(group);
+                }
+                teamMap.get(teamName).members.push(member);
+            });
+
+            return groupedTeams;
+        }
+
+        function buildTeamExportText(targetMembers) {
+            return getTeamExportGroups(targetMembers).map(group => {
+                const rows = group.members.map(member => [
+                    member.name || '',
+                    getTeamExportMark(member.is_watch, '△'),
+                    getTeamExportMark(member.role_mismatch, '🟡'),
+                    getTeamExportMark(member.skill_issue, '🟡'),
+                    getTeamExportMark(member.concern, '🟡'),
+                    getTeamExportOneOnOneLabel(member),
+                    '',
+                    '🔴🟡🟢'
+                ]).map(cells => `| ${cells.join(' | ')} |`).join('\n');
+
+                return `【${group.teamName}】\n\n| 氏名 | 要警戒 | 役割 | スキル | 状態 | 1on1 | 主要リスク | 優先度 |\n|------|--------|------|--------|------|------|------------|--------|\n${rows}`;
+            }).join('\n\n');
+        }
+
+        function buildTeamExportHtml(targetMembers) {
+            const groups = getTeamExportGroups(targetMembers);
+            if (!groups.length) {
+                return '<p class="history-empty">出力対象のメンバーがいません</p>';
+            }
+
+            return groups.map(group => {
+                const rows = group.members.map(member => `
+                    <tr>
+                        <td>${escHtml(member.name || '')}</td>
+                        <td>${getTeamExportMark(member.is_watch, '△')}</td>
+                        <td>${getTeamExportMark(member.role_mismatch, '🟡')}</td>
+                        <td>${getTeamExportMark(member.skill_issue, '🟡')}</td>
+                        <td>${getTeamExportMark(member.concern, '🟡')}</td>
+                        <td>${getTeamExportOneOnOneLabel(member)}</td>
+                        <td></td>
+                        <td>🔴🟡🟢</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <h3>【${escHtml(group.teamName)}】</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>氏名</th>
+                                <th>要警戒</th>
+                                <th>役割</th>
+                                <th>スキル</th>
+                                <th>状態</th>
+                                <th>1on1</th>
+                                <th>主要リスク</th>
+                                <th>優先度</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            }).join('');
+        }
+
+        function openTeamExportModal() {
+            const targetMembers = getTeamExportTargetMembers();
+            const textarea = document.getElementById('teamExportOutput');
+            textarea.value = buildTeamExportText(targetMembers);
+            document.getElementById('teamExportPreview').innerHTML = buildTeamExportHtml(targetMembers);
+            document.getElementById('teamExportCopyStatus').textContent = '';
+            document.getElementById('teamExportModalOverlay').classList.add('visible');
+            setTimeout(() => {
+                textarea.focus();
+                textarea.select();
+            }, 50);
+        }
+
+        function closeTeamExportModal() {
+            document.getElementById('teamExportModalOverlay').classList.remove('visible');
+            document.getElementById('teamExportCopyStatus').textContent = '';
+        }
+
+        async function copyTeamExportText() {
+            const copied = await copyTextToClipboard(document.getElementById('teamExportOutput').value);
+            document.getElementById('teamExportCopyStatus').textContent = copied
+                ? 'コピーしました'
+                : 'コピーに失敗しました';
         }
 
         function getYearMonthFromDate_(dateStr) {
@@ -1395,6 +2448,7 @@
             document.getElementById('kadouSection').style.display   = isMonthly ? 'none' : '';
             document.getElementById('monthlySection').style.display = isMonthly ? ''     : 'none';
             document.getElementById('addMemberBtn').style.display   = isMonthly ? 'none' : '';
+            document.getElementById('teamExportBtn').style.display  = isMonthly ? 'none' : '';
             document.getElementById('teamFilter').style.display     = isMonthly ? 'none' : '';
             document.getElementById('tabKadou').classList.toggle('active',   !isMonthly);
             document.getElementById('tabMonthly').classList.toggle('active',  isMonthly);
@@ -1469,8 +2523,12 @@
             const total    = members.length;
             const flagged  = members.filter(m => m.role_mismatch || m.skill_issue || m.concern).length;
             const with1on1 = members.filter(m => m.last_1on1).length;
+            const staleCount = members.filter(m => {
+                const days = getDaysSince(m.updated_at);
+                return days !== null && days >= 7;
+            }).length;
             document.getElementById('summaryLine').textContent =
-                `全メンバー：${total}名　｜　分類あり：${flagged}名　｜　1on1記録あり：${with1on1}名`;
+                `全メンバー：${total}名　｜　分類あり：${flagged}名　｜　1on1記録あり：${with1on1}名　｜　未更新7日以上：${staleCount}名`;
         }
 
         function sortMembers(arr) {
@@ -1868,8 +2926,22 @@
         document.getElementById('saveBtn').addEventListener('click',      saveMember);
         document.getElementById('cancelBtn').addEventListener('click',    closeModal);
         document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
+        document.getElementById('kadouReminderBtn').addEventListener('click', openKadouReminderModal);
+        document.getElementById('teamExportBtn').addEventListener('click', openTeamExportModal);
         document.getElementById('teamFilter').addEventListener('change',  renderTable);
         document.getElementById('kadouFocusFilter').addEventListener('change', renderTable);
+        document.getElementById('recipientModeSelect').addEventListener('change', e => {
+            setRecipientMode(e.target.value);
+            updateRecipientModeUI();
+        });
+        document.getElementById('recipientSettingsBtn').addEventListener('click', openRecipientSettingsModal);
+        document.getElementById('teamExportCloseBtn').addEventListener('click', closeTeamExportModal);
+        document.getElementById('teamExportCopyBtn').addEventListener('click', copyTeamExportText);
+        document.getElementById('testBaseDateInput').addEventListener('change', e => applyTestBaseDateOverride(e.target.value));
+        document.getElementById('clearTestBaseDateBtn').addEventListener('click', () => {
+            clearTestBaseDate();
+            applyTestBaseDateOverride('');
+        });
         document.getElementById('modalOverlay').addEventListener('click', e => {
             if (e.target === document.getElementById('modalOverlay')) closeModal();
         });
@@ -1879,15 +2951,28 @@
             document.getElementById('monthNextBtn').addEventListener('click',    () => changeMonth(1));
             document.getElementById('monthlyTeamFilter').addEventListener('change', renderMonthlyTable);
             document.getElementById('monthlyOneOnOneFilter').addEventListener('change', renderMonthlyTable);
+            document.getElementById('monthlyReminderBtn').addEventListener('click', openMonthlyReminderModal);
             document.getElementById('monthlySaveBtn').addEventListener('click',  saveMonthlyRecord);
             document.getElementById('monthlyCancelBtn').addEventListener('click', closeMonthlyModal);
             document.getElementById('historyCloseBtn').addEventListener('click',  closeHistoryModal);
+            document.getElementById('reminderCloseBtn').addEventListener('click', closeReminderModal);
+            document.getElementById('recipientSettingsCancelBtn').addEventListener('click', closeRecipientSettingsModal);
+            document.getElementById('recipientSettingsSaveBtn').addEventListener('click', saveRecipientSettingsFromModal);
 
             document.getElementById('monthlyModalOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('monthlyModalOverlay')) closeMonthlyModal();
             });
             document.getElementById('historyModalOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('historyModalOverlay')) closeHistoryModal();
+            });
+            document.getElementById('reminderModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('reminderModalOverlay')) closeReminderModal();
+            });
+            document.getElementById('teamExportModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('teamExportModalOverlay')) closeTeamExportModal();
+            });
+            document.getElementById('recipientSettingsOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('recipientSettingsOverlay')) closeRecipientSettingsModal();
             });
 
             // キーボードショートカット
@@ -1896,6 +2981,8 @@
                     closeModal();
                     closeMonthlyModal();
                     closeHistoryModal();
+                    closeReminderModal();
+                    closeTeamExportModal();
                 }
                 if (e.ctrlKey && e.key === 'Enter') {
                     if (document.getElementById('modalOverlay').classList.contains('visible'))        saveMember();
