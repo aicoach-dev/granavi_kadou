@@ -1059,6 +1059,93 @@
             min-height: 1.2em;
         }
 
+        .monthly-draft-modal {
+            max-width: 900px;
+        }
+
+        .monthly-draft-preview {
+            margin-bottom: 1rem;
+            max-height: 360px;
+            overflow: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            background: white;
+        }
+
+        .monthly-draft-preview h2,
+        .monthly-draft-preview h3 {
+            color: #1e293b;
+            margin: 0 0 0.625rem;
+        }
+
+        .monthly-draft-preview h2:not(:first-child) {
+            margin-top: 1.25rem;
+        }
+
+        .monthly-draft-preview h3 {
+            font-size: 0.95rem;
+            margin-top: 1rem;
+        }
+
+        .monthly-draft-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.75rem;
+        }
+
+        .monthly-draft-preview th,
+        .monthly-draft-preview td {
+            border: 1px solid #cbd5e1;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8125rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .monthly-draft-preview th {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .monthly-draft-preview p,
+        .monthly-draft-preview ul {
+            margin: 0.375rem 0 0.75rem;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .monthly-draft-preview ul {
+            padding-left: 1.25rem;
+        }
+
+        .monthly-draft-preview hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 1rem 0;
+        }
+
+        .monthly-draft-textarea {
+            width: 100%;
+            min-height: 280px;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+            color: #1e293b;
+            resize: vertical;
+            background: #f8fafc;
+        }
+
+        .monthly-draft-copy-status {
+            font-size: 0.8125rem;
+            color: #64748b;
+            min-height: 1.2em;
+        }
+
         /* ── レスポンシブ ── */
         @media (max-width: 768px) {
             .header-content { flex-direction: column; align-items: stretch; }
@@ -1174,6 +1261,7 @@
                     <option value="uncompleted">1on1未実施のみ</option>
                 </select>
                 <button class="subtle-action-btn" id="monthlyReminderBtn">月次未入力リマインド作成</button>
+                <button class="subtle-action-btn" id="monthlyDraftExportBtn">月次ドラフト出力</button>
             </div>
             <div class="summary-line" id="monthlySummary"></div>
             <div class="table-container">
@@ -1418,7 +1506,24 @@
                 <div class="team-export-copy-status" id="teamExportCopyStatus"></div>
                 <div class="modal-footer-right">
                     <button class="btn-cancel" id="teamExportCloseBtn">閉じる</button>
-                    <button class="btn-save" id="teamExportCopyBtn">コピー</button>
+                    <button class="btn-cancel" id="teamExportTextCopyBtn">テキストコピー</button>
+                    <button class="btn-save" id="teamExportHtmlCopyBtn">HTMLコピー</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="monthlyDraftModalOverlay">
+        <div class="modal modal-wide monthly-draft-modal">
+            <h2>月次ドラフト出力</h2>
+            <div id="monthlyDraftPreview" class="monthly-draft-preview"></div>
+            <textarea id="monthlyDraftOutput" class="monthly-draft-textarea" readonly></textarea>
+            <div class="modal-footer">
+                <div class="monthly-draft-copy-status" id="monthlyDraftCopyStatus"></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="monthlyDraftCloseBtn">閉じる</button>
+                    <button class="btn-cancel" id="monthlyDraftTextCopyBtn">テキストコピー</button>
+                    <button class="btn-save" id="monthlyDraftHtmlCopyBtn">HTMLコピー</button>
                 </div>
             </div>
         </div>
@@ -1432,6 +1537,7 @@
         const MONTHLY_KEY  = 'kadou_monthly_v1';
         const TEAMS        = ['S/W1','S/W2','S/W3','S/W4','セミコン','ハード','メカ','TEC','部付き'];
         const APP_VERSION  = 'v0.4.0';
+        const BLOG_MONTHLY_TARGET = 1;
         const GAS_URL      = 'https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec';
         const REMINDER_PLACEHOLDER_TO = '（担当リーダー未設定）';
         const REMINDER_PLACEHOLDER_CC = '（部長未設定）';
@@ -2128,6 +2234,19 @@
             return (member.last_1on1 || '').trim() ? '済' : '未';
         }
 
+        function getTeamStatusRowValues(member) {
+            return [
+                member.name || '',
+                getTeamExportMark(member.is_watch, '△'),
+                getTeamExportMark(member.role_mismatch, '🟡'),
+                getTeamExportMark(member.skill_issue, '🟡'),
+                getTeamExportMark(member.concern, '🟡'),
+                getTeamExportOneOnOneLabel(member),
+                '',
+                '🔴🟡🟢'
+            ];
+        }
+
         function getTeamExportTargetMembers() {
             const selectedTeam = document.getElementById('teamFilter').value;
             if (!selectedTeam) return members;
@@ -2153,16 +2272,9 @@
 
         function buildTeamExportText(targetMembers) {
             return getTeamExportGroups(targetMembers).map(group => {
-                const rows = group.members.map(member => [
-                    member.name || '',
-                    getTeamExportMark(member.is_watch, '△'),
-                    getTeamExportMark(member.role_mismatch, '🟡'),
-                    getTeamExportMark(member.skill_issue, '🟡'),
-                    getTeamExportMark(member.concern, '🟡'),
-                    getTeamExportOneOnOneLabel(member),
-                    '',
-                    '🔴🟡🟢'
-                ]).map(cells => `| ${cells.join(' | ')} |`).join('\n');
+                const rows = group.members
+                    .map(member => `| ${getTeamStatusRowValues(member).join(' | ')} |`)
+                    .join('\n');
 
                 return `【${group.teamName}】\n\n| 氏名 | 要警戒 | 役割 | スキル | 状態 | 1on1 | 主要リスク | 優先度 |\n|------|--------|------|--------|------|------|------------|--------|\n${rows}`;
             }).join('\n\n');
@@ -2175,18 +2287,21 @@
             }
 
             return groups.map(group => {
-                const rows = group.members.map(member => `
+                const rows = group.members.map(member => {
+                    const cells = getTeamStatusRowValues(member);
+                    return `
                     <tr>
-                        <td>${escHtml(member.name || '')}</td>
-                        <td>${getTeamExportMark(member.is_watch, '△')}</td>
-                        <td>${getTeamExportMark(member.role_mismatch, '🟡')}</td>
-                        <td>${getTeamExportMark(member.skill_issue, '🟡')}</td>
-                        <td>${getTeamExportMark(member.concern, '🟡')}</td>
-                        <td>${getTeamExportOneOnOneLabel(member)}</td>
+                        <td>${escHtml(cells[0])}</td>
+                        <td>${cells[1]}</td>
+                        <td>${cells[2]}</td>
+                        <td>${cells[3]}</td>
+                        <td>${cells[4]}</td>
+                        <td>${cells[5]}</td>
                         <td></td>
-                        <td>🔴🟡🟢</td>
+                        <td>${cells[7]}</td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
 
                 return `
                     <h3>【${escHtml(group.teamName)}】</h3>
@@ -2232,6 +2347,371 @@
             document.getElementById('teamExportCopyStatus').textContent = copied
                 ? 'コピーしました'
                 : 'コピーに失敗しました';
+        }
+
+        async function copyTeamExportHtml() {
+            const preview = document.getElementById('teamExportPreview');
+            if (!preview) {
+                document.getElementById('teamExportCopyStatus').textContent = 'HTMLコピーに失敗しました';
+                return;
+            }
+
+            const html = preview.innerHTML;
+            const text = document.getElementById('teamExportOutput').value;
+
+            try {
+                if (navigator.clipboard && window.ClipboardItem && navigator.clipboard.write) {
+                    const item = new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([text], { type: 'text/plain' })
+                    });
+                    await navigator.clipboard.write([item]);
+                    document.getElementById('teamExportCopyStatus').textContent = 'HTMLをコピーしました';
+                    return;
+                }
+            } catch (e) {
+                // fall through to failure message
+            }
+
+            document.getElementById('teamExportCopyStatus').textContent = 'HTMLコピーに失敗しました。テキストコピーを使用してください';
+        }
+
+        function getMonthlyDraftTargetMembers() {
+            const selectedTeam = document.getElementById('monthlyTeamFilter').value;
+            if (!selectedTeam) return members;
+            return members.filter(member => member.team === selectedTeam);
+        }
+
+        function getMonthlyDraftTargetGroups() {
+            return getTeamExportGroups(getMonthlyDraftTargetMembers());
+        }
+
+        function getFiscalYearStartYear(ym) {
+            const [year, month] = ym.split('-').map(Number);
+            return month >= 4 ? year : year - 1;
+        }
+
+        function getFiscalYearMonths(ym) {
+            const months = [];
+            let cursor = `${getFiscalYearStartYear(ym)}-04`;
+            while (cursor <= ym) {
+                months.push(cursor);
+                cursor = shiftYearMonth(cursor, 1);
+            }
+            return months;
+        }
+
+        function formatRateText(done, total) {
+            if (!total) return '0% (0/0)';
+            return `${Math.round((done / total) * 100)}% (${done}/${total})`;
+        }
+
+        function formatCountText(count) {
+            return `${count}件`;
+        }
+
+        function getMonthlyRecordMapByMember(targetMembers, targetMonths) {
+            const targetIds = new Set(targetMembers.map(member => member.id));
+            const targetMonthSet = new Set(targetMonths);
+            const recordMap = new Map();
+
+            monthlyRecords.forEach(record => {
+                if (!targetIds.has(record.member_id)) return;
+                if (!targetMonthSet.has(record.year_month)) return;
+                recordMap.set(`${record.member_id}__${record.year_month}`, record);
+            });
+
+            return recordMap;
+        }
+
+        function getMonthlyDraftAutoGoalRows(targetMembers, ym) {
+            const fiscalMonths = getFiscalYearMonths(ym);
+            const recordMap = getMonthlyRecordMapByMember(targetMembers, fiscalMonths);
+            const monthCount = fiscalMonths.length;
+            const memberCount = targetMembers.length;
+            const currentDone = targetMembers.filter(member => {
+                const record = recordMap.get(`${member.id}__${ym}`);
+                return record && record.one_on_one_count >= 1;
+            }).length;
+            const totalPossible = memberCount * monthCount;
+            let cumulativeDone = 0;
+
+            targetMembers.forEach(member => {
+                fiscalMonths.forEach(month => {
+                    const record = recordMap.get(`${member.id}__${month}`);
+                    if (record && record.one_on_one_count >= 1) cumulativeDone += 1;
+                });
+            });
+
+            const currentBlogCount = targetMembers.reduce((sum, member) => {
+                const record = recordMap.get(`${member.id}__${ym}`);
+                return sum + ((record && record.plus_blog) || 0);
+            }, 0);
+
+            const cumulativeBlogCount = targetMembers.reduce((sum, member) => {
+                return sum + fiscalMonths.reduce((acc, month) => {
+                    const record = recordMap.get(`${member.id}__${month}`);
+                    return acc + ((record && record.plus_blog) || 0);
+                }, 0);
+            }, 0);
+
+            return [
+                {
+                    item: '1on1',
+                    current: formatRateText(currentDone, memberCount),
+                    cumulative: formatRateText(cumulativeDone, totalPossible),
+                    status: currentDone === memberCount ? '🟢' : '🔴',
+                    comment: currentDone === memberCount ? '全員実施' : '未実施あり'
+                },
+                {
+                    item: 'ブログ',
+                    current: formatCountText(currentBlogCount),
+                    cumulative: formatCountText(cumulativeBlogCount),
+                    status: currentBlogCount === 0 ? '🔴' : (currentBlogCount >= BLOG_MONTHLY_TARGET ? '🟢' : '🟡'),
+                    comment: currentBlogCount === 0 ? '投稿なし' : (currentBlogCount >= BLOG_MONTHLY_TARGET ? '達成' : '目標未達')
+                }
+            ];
+        }
+
+        function buildMonthlyDraftStatusTableHtml(targetMembers) {
+            const rows = targetMembers.map(member => {
+                const cells = getTeamStatusRowValues(member);
+                return `
+                    <tr>
+                        <td>${escHtml(cells[0])}</td>
+                        <td>${cells[1]}</td>
+                        <td>${cells[2]}</td>
+                        <td>${cells[3]}</td>
+                        <td>${cells[4]}</td>
+                        <td>${cells[5]}</td>
+                        <td></td>
+                        <td>${cells[7]}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>氏名</th>
+                            <th>要警戒</th>
+                            <th>役割</th>
+                            <th>スキル</th>
+                            <th>状態</th>
+                            <th>1on1</th>
+                            <th>主要リスク</th>
+                            <th>優先度</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function buildMonthlyDraftStatusTableText(targetMembers) {
+            const header = '氏名\t要警戒\t役割\tスキル\t状態\t1on1\t主要リスク\t優先度';
+            const rows = targetMembers.map(member => getTeamStatusRowValues(member).join('\t')).join('\n');
+            return `${header}\n${rows}`;
+        }
+
+        function buildMonthlyDraftTeamHtml(group, ym) {
+            const autoRows = getMonthlyDraftAutoGoalRows(group.members, ym).map(row => `
+                <tr>
+                    <td>${row.item}</td>
+                    <td>${row.current}</td>
+                    <td>${row.cumulative}</td>
+                    <td>${row.status}</td>
+                    <td>${row.comment}</td>
+                </tr>
+            `).join('');
+
+            return `
+                <section>
+                    <h2>【${escHtml(group.teamName)}】</h2>
+                    <h3>① 共通目標（自動）</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>今月実績</th>
+                                <th>今年度累計</th>
+                                <th>状態</th>
+                                <th>コメント</th>
+                            </tr>
+                        </thead>
+                        <tbody>${autoRows}</tbody>
+                    </table>
+
+                    <h3>② 共通目標（手入力）</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>今月実績</th>
+                                <th>状態</th>
+                                <th>コメント</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>技術伝承</td><td>未記入</td><td></td><td></td></tr>
+                            <tr><td>CS改善活動</td><td>未記入</td><td></td><td></td></tr>
+                        </tbody>
+                    </table>
+                    <ul>
+                        <li>前月から変更がある場合のみ更新</li>
+                        <li>技術伝承：1名実施 / 未実施</li>
+                        <li>CS改善活動：フィードバック実施 / 未実施</li>
+                        <li>状態の目安：🟢：計画通り / 🟡：一部実施 / 🔴：未実施</li>
+                    </ul>
+
+                    <h3>③ 個人別状態一覧（要更新）</h3>
+                    ${buildMonthlyDraftStatusTableHtml(group.members)}
+                    <ul>
+                        <li>全メンバーについて「主要リスク」と「優先度」を記載してください</li>
+                        <li>主要リスクは「何が起きるか」を1人1つだけ記載してください</li>
+                        <li>優先度の目安</li>
+                        <li>🔴：対応が必要（放置すると問題になる）</li>
+                        <li>🟡：注意してフォロー</li>
+                        <li>🟢：問題なし</li>
+                        <li>状態（進捗）と優先度は意味が異なる</li>
+                    </ul>
+
+                    <h3>④ チーム個別目標</h3>
+                    <p>- 目標：<br>- 今月の進捗：</p>
+
+                    <h3>⑤ 横断課題</h3>
+                    <p>-<br>-</p>
+
+                    <h3>⑥ 来月の対応</h3>
+                    <p>-<br>-</p>
+                </section>
+            `;
+        }
+
+        function buildMonthlyDraftTeamText(group, ym) {
+            const autoRows = getMonthlyDraftAutoGoalRows(group.members, ym);
+            const autoLines = [
+                '項目\t今月実績\t今年度累計\t状態\tコメント',
+                ...autoRows.map(row => [row.item, row.current, row.cumulative, row.status, row.comment].join('\t'))
+            ];
+            const manualLines = [
+                '項目\t今月実績\t状態\tコメント',
+                '技術伝承\t未記入\t\t',
+                'CS改善活動\t未記入\t\t'
+            ];
+
+            return [
+                `# 【${group.teamName}】`,
+                '',
+                '## ① 共通目標（自動）',
+                ...autoLines,
+                '',
+                '## ② 共通目標（手入力）',
+                ...manualLines,
+                '※前月から変更がある場合のみ更新',
+                '※ 技術伝承：1名実施 / 未実施',
+                '※ CS改善活動：フィードバック実施 / 未実施',
+                '※ 状態の目安：🟢：計画通り / 🟡：一部実施 / 🔴：未実施',
+                '',
+                '## ③ 個人別状態一覧（要更新）',
+                buildMonthlyDraftStatusTableText(group.members),
+                '※全メンバーについて「主要リスク」と「優先度」を記載してください',
+                '※主要リスクは「何が起きるか」を1人1つだけ記載してください',
+                '',
+                '※優先度の目安',
+                '🔴：対応が必要（放置すると問題になる）',
+                '🟡：注意してフォロー',
+                '🟢：問題なし',
+                '',
+                '※状態（進捗）と優先度は意味が異なる',
+                '',
+                '## ④ チーム個別目標',
+                '- 目標：',
+                '- 今月の進捗：',
+                '',
+                '## ⑤ 横断課題',
+                '-',
+                '-',
+                '',
+                '## ⑥ 来月の対応',
+                '-',
+                '-'
+            ].join('\n');
+        }
+
+        function buildMonthlyDraftHtml() {
+            const ym = currentYearMonth;
+            const groups = getMonthlyDraftTargetGroups();
+            if (!groups.length) {
+                return '<p class="history-empty">出力対象のチームがありません</p>';
+            }
+
+            return groups.map((group, index) => {
+                const block = buildMonthlyDraftTeamHtml(group, ym);
+                return index === groups.length - 1 ? block : `${block}<hr>`;
+            }).join('');
+        }
+
+        function buildMonthlyDraftText() {
+            const ym = currentYearMonth;
+            const groups = getMonthlyDraftTargetGroups();
+            if (!groups.length) {
+                return '出力対象のチームがありません';
+            }
+
+            return groups.map(group => buildMonthlyDraftTeamText(group, ym)).join('\n\n---\n\n');
+        }
+
+        function openMonthlyDraftModal() {
+            document.getElementById('monthlyDraftPreview').innerHTML = buildMonthlyDraftHtml();
+            document.getElementById('monthlyDraftOutput').value = buildMonthlyDraftText();
+            document.getElementById('monthlyDraftCopyStatus').textContent = '';
+            document.getElementById('monthlyDraftModalOverlay').classList.add('visible');
+            setTimeout(() => {
+                const textarea = document.getElementById('monthlyDraftOutput');
+                textarea.focus();
+                textarea.select();
+            }, 50);
+        }
+
+        function closeMonthlyDraftModal() {
+            document.getElementById('monthlyDraftModalOverlay').classList.remove('visible');
+            document.getElementById('monthlyDraftCopyStatus').textContent = '';
+        }
+
+        async function copyMonthlyDraftText() {
+            const copied = await copyTextToClipboard(document.getElementById('monthlyDraftOutput').value);
+            document.getElementById('monthlyDraftCopyStatus').textContent = copied
+                ? 'コピーしました'
+                : 'コピーに失敗しました';
+        }
+
+        async function copyMonthlyDraftHtml() {
+            const preview = document.getElementById('monthlyDraftPreview');
+            if (!preview) {
+                document.getElementById('monthlyDraftCopyStatus').textContent = 'HTMLコピーに失敗しました';
+                return;
+            }
+
+            const html = preview.innerHTML;
+            const text = document.getElementById('monthlyDraftOutput').value;
+
+            try {
+                if (navigator.clipboard && window.ClipboardItem && navigator.clipboard.write) {
+                    const item = new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([text], { type: 'text/plain' })
+                    });
+                    await navigator.clipboard.write([item]);
+                    document.getElementById('monthlyDraftCopyStatus').textContent = 'HTMLをコピーしました';
+                    return;
+                }
+            } catch (e) {
+                // fall through to failure message
+            }
+
+            document.getElementById('monthlyDraftCopyStatus').textContent = 'HTMLコピーに失敗しました。テキストコピーを使用してください';
         }
 
         function getYearMonthFromDate_(dateStr) {
@@ -2936,7 +3416,8 @@
         });
         document.getElementById('recipientSettingsBtn').addEventListener('click', openRecipientSettingsModal);
         document.getElementById('teamExportCloseBtn').addEventListener('click', closeTeamExportModal);
-        document.getElementById('teamExportCopyBtn').addEventListener('click', copyTeamExportText);
+        document.getElementById('teamExportTextCopyBtn').addEventListener('click', copyTeamExportText);
+        document.getElementById('teamExportHtmlCopyBtn').addEventListener('click', copyTeamExportHtml);
         document.getElementById('testBaseDateInput').addEventListener('change', e => applyTestBaseDateOverride(e.target.value));
         document.getElementById('clearTestBaseDateBtn').addEventListener('click', () => {
             clearTestBaseDate();
@@ -2952,8 +3433,12 @@
             document.getElementById('monthlyTeamFilter').addEventListener('change', renderMonthlyTable);
             document.getElementById('monthlyOneOnOneFilter').addEventListener('change', renderMonthlyTable);
             document.getElementById('monthlyReminderBtn').addEventListener('click', openMonthlyReminderModal);
+            document.getElementById('monthlyDraftExportBtn').addEventListener('click', openMonthlyDraftModal);
             document.getElementById('monthlySaveBtn').addEventListener('click',  saveMonthlyRecord);
             document.getElementById('monthlyCancelBtn').addEventListener('click', closeMonthlyModal);
+            document.getElementById('monthlyDraftCloseBtn').addEventListener('click', closeMonthlyDraftModal);
+            document.getElementById('monthlyDraftTextCopyBtn').addEventListener('click', copyMonthlyDraftText);
+            document.getElementById('monthlyDraftHtmlCopyBtn').addEventListener('click', copyMonthlyDraftHtml);
             document.getElementById('historyCloseBtn').addEventListener('click',  closeHistoryModal);
             document.getElementById('reminderCloseBtn').addEventListener('click', closeReminderModal);
             document.getElementById('recipientSettingsCancelBtn').addEventListener('click', closeRecipientSettingsModal);
@@ -2971,6 +3456,9 @@
             document.getElementById('teamExportModalOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('teamExportModalOverlay')) closeTeamExportModal();
             });
+            document.getElementById('monthlyDraftModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('monthlyDraftModalOverlay')) closeMonthlyDraftModal();
+            });
             document.getElementById('recipientSettingsOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('recipientSettingsOverlay')) closeRecipientSettingsModal();
             });
@@ -2983,6 +3471,7 @@
                     closeHistoryModal();
                     closeReminderModal();
                     closeTeamExportModal();
+                    closeMonthlyDraftModal();
                 }
                 if (e.ctrlKey && e.key === 'Enter') {
                     if (document.getElementById('modalOverlay').classList.contains('visible'))        saveMember();
