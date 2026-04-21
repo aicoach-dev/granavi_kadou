@@ -274,6 +274,14 @@
             background-color: #f8fafc;
         }
 
+        tr.row-waiting {
+            background-color: #eff6ff;
+        }
+
+        tr.row-waiting:hover {
+            background-color: #dbeafe;
+        }
+
         tbody tr:last-child {
             border-bottom: none;
         }
@@ -1223,7 +1231,7 @@
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr>
+                        <tr id="tableHeadRow">
                             <th>名前</th>
                             <th>チーム</th>
                             <th>稼働区分</th>
@@ -1359,6 +1367,28 @@
                 <div class="form-group">
                     <label>メモ</label>
                     <input type="text" id="memoInput" placeholder="短いメモ（任意）">
+                </div>
+            </div>
+
+            <div class="modal-section" id="taikiFollowSection" style="display:none">
+                <div class="modal-section-title">待機フォロー情報</div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>ゴール</label>
+                        <input type="text" id="taikiGoalInput" placeholder="例：AWS SAA合格">
+                    </div>
+                </div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>進捗状況</label>
+                        <input type="text" id="taikiProgressInput" placeholder="例：Week3/8">
+                    </div>
+                </div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>課題・問題点</label>
+                        <textarea id="taikiIssueInput" rows="3" placeholder="例：VPCの概念が理解できていない"></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -1596,6 +1626,15 @@
         // マスターデータ（employee_master.csv より登録）
         // =========================================================
         function getSampleData() {
+            // getSampleData() の初期値を確認する場合は、ブラウザの localStorage に残った既存データをクリアしてから動作確認する。
+            const taikiDefaults = {
+                c_8:  { goal: "AWS SAA合格・体調保護", progress: "模擬試験5回目完了", issue: "" },
+                c_42: { goal: "スコープアウト（人事対応中）", progress: "", issue: "" },
+                c_43: { goal: "適性試験合格・研修完走", progress: "外部研修受講中", issue: "" },
+                c_44: { goal: "AWS SAA合格（2ヶ月後）", progress: "exDay01完了", issue: "" },
+                c_45: { goal: "技術伝承資料ドラフト完成", progress: "なぜなぜ分析実施中", issue: "" }
+            };
+
             return [
                 {id:"c_1",name:"柏木 浩司",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""},
                 {id:"c_2",name:"宮本 孝",team:"S/W1",status_type:"稼働中",is_watch:false,watch_note:"成果未達／勤怠入力ミス",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-02-26",memo:"対応完了",updated_at:""},
@@ -1644,7 +1683,15 @@
                 {id:"c_45",name:"渡邉 巌夫",team:"セミコン",status_type:"待機中",is_watch:true,watch_note:"適応できず",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-04-01",memo:"対応完了",updated_at:""},
                 {id:"c_46",name:"田島 明典",team:"部付き",status_type:"稼働中",is_watch:false,watch_note:"消極的・報連相不足",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"2026-03-11",memo:"週次MTG",updated_at:""},
                 {id:"c_47",name:"外垣 蓮",team:"部付き",status_type:"稼働中",is_watch:false,watch_note:"",role_mismatch:false,skill_issue:false,concern:false,last_1on1:"",memo:"",updated_at:""}
-            ];
+            ].map(m => {
+                const taiki = taikiDefaults[m.id] || {};
+                return {
+                    ...m,
+                    taiki_goal: taiki.goal || "",
+                    taiki_progress: taiki.progress || "",
+                    taiki_issue: taiki.issue || ""
+                };
+            });
         }
 
         // =========================================================
@@ -1655,6 +1702,12 @@
                 const res  = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const data = await res.json();
                 members      = data.value ? JSON.parse(data.value) : [];
+                members      = members.map(m => ({
+                    taiki_goal: "",
+                    taiki_progress: "",
+                    taiki_issue: "",
+                    ...m
+                }));
                 lastLoadedAt = data.updated_at;
                 fetchedAt    = new Date();
                 updateFetchStatus();
@@ -3022,6 +3075,7 @@
         function renderTable() {
             const filterVal = document.getElementById('teamFilter').value;
             const focusVal  = document.getElementById('kadouFocusFilter').value;
+            const isWaitingView = focusVal === 'waiting';
             const visible   = members.filter(m => {
                 if (filterVal && m.team !== filterVal) return false;
                 if (focusVal === 'watch' && !m.is_watch) return false;
@@ -3029,6 +3083,30 @@
                 return true;
             });
             updateSummaryLine();
+
+            const standardHeader = `
+                <th>名前</th>
+                <th>チーム</th>
+                <th>稼働区分</th>
+                <th class="center">要警戒</th>
+                <th>要警戒メモ</th>
+                <th class="center">役割不一致</th>
+                <th class="center">スキル課題</th>
+                <th class="center">状態懸念</th>
+                <th>最終1on1日</th>
+                <th>メモ</th>
+            `;
+            const waitingHeader = `
+                <th>名前</th>
+                <th>チーム</th>
+                <th>状態</th>
+                <th>ゴール</th>
+                <th>進捗状況</th>
+                <th>課題・問題点</th>
+                <th>最終1on1</th>
+                <th>フォロー担当</th>
+            `;
+            document.getElementById('tableHeadRow').innerHTML = isWaitingView ? waitingHeader : standardHeader;
 
             const flagCell = (val) => val
                 ? `<td class="center"><span class="flag-check">✓</span></td>`
@@ -3052,8 +3130,31 @@
                 const memoCell     = m.memo
                     ? `<td><span class="memo-text" title="${m.memo}">${m.memo}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
+                const taikiGoalCell = m.taiki_goal
+                    ? `<td><span class="memo-text" title="${m.taiki_goal}">${m.taiki_goal}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+                const taikiProgressCell = m.taiki_progress
+                    ? `<td><span class="memo-text" title="${m.taiki_progress}">${m.taiki_progress}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+                const taikiIssueCell = m.taiki_issue
+                    ? `<td><span class="memo-text" title="${m.taiki_issue}">${m.taiki_issue}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
+                const rowClass = m.status_type === '待機中' ? 'row-waiting' : '';
 
-                return `<tr data-id="${m.id}">
+                if (isWaitingView) {
+                    return `<tr class="${rowClass}" data-id="${m.id}">
+                    <td class="name-cell">${m.name}</td>
+                    <td class="team-cell">${m.team}</td>
+                    <td>${statusBadge}</td>
+                    ${taikiGoalCell}
+                    ${taikiProgressCell}
+                    ${taikiIssueCell}
+                    ${oneOnOneCell}
+                    ${memoCell}
+                </tr>`;
+                }
+
+                return `<tr class="${rowClass}" data-id="${m.id}">
                     <td class="name-cell">${m.name}</td>
                     <td class="team-cell">${m.team}</td>
                     <td>${statusBadge}</td>
@@ -3308,6 +3409,12 @@
         // =========================================================
         // 稼働一覧：モーダル操作（既存）
         // =========================================================
+        function toggleTaikiFollowSection() {
+            const section = document.getElementById('taikiFollowSection');
+            if (!section) return;
+            section.style.display = document.getElementById('statusTypeInput').value === '待機中' ? '' : 'none';
+        }
+
         function openAddModal() {
             editingMemberId = null;
             document.getElementById('modalTitle').textContent       = 'メンバー追加';
@@ -3321,7 +3428,11 @@
             document.getElementById('cbConcern').checked            = false;
             document.getElementById('lastOneOnOne').value           = '';
             document.getElementById('memoInput').value              = '';
+            document.getElementById('taikiGoalInput').value         = '';
+            document.getElementById('taikiProgressInput').value     = '';
+            document.getElementById('taikiIssueInput').value        = '';
             document.getElementById('deleteBtn').style.display      = 'none';
+            toggleTaikiFollowSection();
             document.getElementById('modalOverlay').classList.add('visible');
             setTimeout(() => document.getElementById('nameInput').focus(), 50);
         }
@@ -3341,7 +3452,11 @@
             document.getElementById('cbConcern').checked            = !!m.concern;
             document.getElementById('lastOneOnOne').value           = m.last_1on1 || '';
             document.getElementById('memoInput').value              = m.memo || '';
+            document.getElementById('taikiGoalInput').value         = m.taiki_goal || '';
+            document.getElementById('taikiProgressInput').value     = m.taiki_progress || '';
+            document.getElementById('taikiIssueInput').value        = m.taiki_issue || '';
             document.getElementById('deleteBtn').style.display      = 'block';
+            toggleTaikiFollowSection();
             document.getElementById('modalOverlay').classList.add('visible');
         }
 
@@ -3354,11 +3469,13 @@
             const name = document.getElementById('nameInput').value.trim();
             const team = document.getElementById('teamInput').value;
             if (!name || !team) { alert('名前とチームは必須です'); return; }
+            const statusType = document.getElementById('statusTypeInput').value;
+            const isWaiting = statusType === '待機中';
             const record = {
                 id:            editingMemberId || ('m_' + Date.now()),
                 name,
                 team,
-                status_type:   document.getElementById('statusTypeInput').value,
+                status_type:   statusType,
                 is_watch:      document.getElementById('cbIsWatch').checked,
                 watch_note:    document.getElementById('watchNoteInput').value.trim(),
                 role_mismatch: document.getElementById('cbRoleMismatch').checked,
@@ -3366,6 +3483,9 @@
                 concern:       document.getElementById('cbConcern').checked,
                 last_1on1:     document.getElementById('lastOneOnOne').value,
                 memo:          document.getElementById('memoInput').value.trim(),
+                taiki_goal:     isWaiting ? document.getElementById('taikiGoalInput').value.trim() : '',
+                taiki_progress: isWaiting ? document.getElementById('taikiProgressInput').value.trim() : '',
+                taiki_issue:    isWaiting ? document.getElementById('taikiIssueInput').value.trim() : '',
                 updated_at:    getToday()
             };
             if (editingMemberId) {
@@ -3402,11 +3522,12 @@
             document.getElementById('tabMonthly').addEventListener('click', () => switchTab('monthly'));
 
             // 稼働一覧（既存）
-        document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
-        document.getElementById('saveBtn').addEventListener('click',      saveMember);
-        document.getElementById('cancelBtn').addEventListener('click',    closeModal);
-        document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
-        document.getElementById('kadouReminderBtn').addEventListener('click', openKadouReminderModal);
+            document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
+            document.getElementById('saveBtn').addEventListener('click',      saveMember);
+            document.getElementById('cancelBtn').addEventListener('click',    closeModal);
+            document.getElementById('deleteBtn').addEventListener('click',    deleteMember);
+            document.getElementById('statusTypeInput').addEventListener('change', toggleTaikiFollowSection);
+            document.getElementById('kadouReminderBtn').addEventListener('click', openKadouReminderModal);
         document.getElementById('teamExportBtn').addEventListener('click', openTeamExportModal);
         document.getElementById('teamFilter').addEventListener('change',  renderTable);
         document.getElementById('kadouFocusFilter').addEventListener('change', renderTable);
