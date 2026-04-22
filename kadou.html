@@ -1363,6 +1363,13 @@
                 </div>
             </div>
 
+            <div class="form-row full" id="followOwnerRow" style="display:none">
+                <div class="form-group">
+                    <label>フォロー担当</label>
+                    <input type="text" id="followOwnerInput" placeholder="例：部長 / 人事 / 営業 / 部長→人事">
+                </div>
+            </div>
+
             <div class="form-row full">
                 <div class="form-group">
                     <label>メモ</label>
@@ -1687,6 +1694,7 @@
                 const taiki = taikiDefaults[m.id] || {};
                 return {
                     ...m,
+                    followOwner: "",
                     taiki_goal: taiki.goal || "",
                     taiki_progress: taiki.progress || "",
                     taiki_issue: taiki.issue || ""
@@ -1703,6 +1711,7 @@
                 const data = await res.json();
                 members      = data.value ? JSON.parse(data.value) : [];
                 members      = members.map(m => ({
+                    followOwner: "",
                     taiki_goal: "",
                     taiki_progress: "",
                     taiki_issue: "",
@@ -3130,6 +3139,9 @@
                 const memoCell     = m.memo
                     ? `<td><span class="memo-text" title="${m.memo}">${m.memo}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
+                const followOwnerCell = m.followOwner
+                    ? `<td><span class="memo-text" title="${m.followOwner}">${m.followOwner}</span></td>`
+                    : `<td><span class="memo-empty">−</span></td>`;
                 const taikiGoalCell = m.taiki_goal
                     ? `<td><span class="memo-text" title="${m.taiki_goal}">${m.taiki_goal}</span></td>`
                     : `<td><span class="memo-empty">−</span></td>`;
@@ -3150,7 +3162,7 @@
                     ${taikiProgressCell}
                     ${taikiIssueCell}
                     ${oneOnOneCell}
-                    ${memoCell}
+                    ${followOwnerCell}
                 </tr>`;
                 }
 
@@ -3411,8 +3423,10 @@
         // =========================================================
         function toggleTaikiFollowSection() {
             const section = document.getElementById('taikiFollowSection');
-            if (!section) return;
-            section.style.display = document.getElementById('statusTypeInput').value === '待機中' ? '' : 'none';
+            const followOwnerRow = document.getElementById('followOwnerRow');
+            const display = document.getElementById('statusTypeInput').value === '待機中' ? '' : 'none';
+            if (section) section.style.display = display;
+            if (followOwnerRow) followOwnerRow.style.display = display;
         }
 
         function openAddModal() {
@@ -3427,6 +3441,7 @@
             document.getElementById('cbSkillIssue').checked         = false;
             document.getElementById('cbConcern').checked            = false;
             document.getElementById('lastOneOnOne').value           = '';
+            document.getElementById('followOwnerInput').value       = '';
             document.getElementById('memoInput').value              = '';
             document.getElementById('taikiGoalInput').value         = '';
             document.getElementById('taikiProgressInput').value     = '';
@@ -3451,6 +3466,7 @@
             document.getElementById('cbSkillIssue').checked         = !!m.skill_issue;
             document.getElementById('cbConcern').checked            = !!m.concern;
             document.getElementById('lastOneOnOne').value           = m.last_1on1 || '';
+            document.getElementById('followOwnerInput').value       = m.followOwner || '';
             document.getElementById('memoInput').value              = m.memo || '';
             document.getElementById('taikiGoalInput').value         = m.taiki_goal || '';
             document.getElementById('taikiProgressInput').value     = m.taiki_progress || '';
@@ -3482,6 +3498,7 @@
                 skill_issue:   document.getElementById('cbSkillIssue').checked,
                 concern:       document.getElementById('cbConcern').checked,
                 last_1on1:     document.getElementById('lastOneOnOne').value,
+                followOwner:   isWaiting ? document.getElementById('followOwnerInput').value.trim() : '',
                 memo:          document.getElementById('memoInput').value.trim(),
                 taiki_goal:     isWaiting ? document.getElementById('taikiGoalInput').value.trim() : '',
                 taiki_progress: isWaiting ? document.getElementById('taikiProgressInput').value.trim() : '',
