@@ -141,6 +141,41 @@
             flex: 1 1 320px;
         }
 
+        .periodic-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.875rem;
+        }
+
+        .periodic-controls-left,
+        .periodic-controls-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .periodic-period-display {
+            font-size: 0.8125rem;
+            color: #475569;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .periodic-reset-warning {
+            margin-top: 0.875rem;
+            padding: 0.75rem 0.875rem;
+            border: 1px solid #fecaca;
+            border-radius: 0.5rem;
+            background: #fef2f2;
+            color: #991b1b;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+        }
+
         .test-base-date-row {
             display: flex;
             align-items: center;
@@ -756,6 +791,53 @@
             white-space: nowrap;
         }
 
+        #periodicTaskTableBody tr {
+            cursor: default;
+        }
+
+        #periodicTaskTableBody tr:hover {
+            background-color: transparent;
+        }
+
+        .periodic-status-cell {
+            text-align: center;
+        }
+
+        .periodic-status-btn {
+            min-width: 64px;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid transparent;
+            border-radius: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .periodic-status-btn.periodic-status-pending {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        .periodic-status-btn.periodic-status-done {
+            background: #dcfce7;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        .periodic-status-btn.periodic-status-na {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            color: #4b5563;
+        }
+
+        .periodic-empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 2rem 0.75rem;
+        }
+
         /* 履歴リンク（名前クリック） */
         .name-history-link {
             font-weight: 600;
@@ -1163,6 +1245,8 @@
             .form-row { grid-template-columns: 1fr; }
             .checkbox-items { flex-direction: column; gap: 0.625rem; }
             .monthly-controls { flex-direction: column; align-items: stretch; }
+            .periodic-controls { flex-direction: column; align-items: stretch; }
+            .periodic-controls-left, .periodic-controls-right { width: 100%; }
             .recipient-settings-table,
             .recipient-settings-table tbody,
             .recipient-settings-table tr,
@@ -1195,6 +1279,7 @@
         <div class="tab-bar-inner">
             <button class="tab-btn active" id="tabKadou">稼働一覧</button>
             <button class="tab-btn" id="tabMonthly">月次実績</button>
+            <button class="tab-btn" id="tabPeriodic">定期タスク確認</button>
         </div>
     </div>
 
@@ -1289,6 +1374,42 @@
                         </tr>
                     </thead>
                     <tbody id="monthlyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================
+         定期タスク確認セクション
+    ============================== -->
+    <div id="periodicSection" style="display:none">
+        <div class="main-container">
+            <div class="periodic-controls">
+                <div class="periodic-controls-left">
+                    <select class="team-filter" id="periodicTeamFilter"></select>
+                    <button class="subtle-action-btn" id="periodicIncompleteToggleBtn">未のみ表示: OFF</button>
+                </div>
+                <div class="periodic-controls-right">
+                    <span class="periodic-period-display">対象期間: <span id="periodicPeriodLabel">2026下期</span></span>
+                    <button class="subtle-action-btn" id="periodicPeriodChangeBtn">期間変更</button>
+                    <button class="subtle-action-btn" id="periodicExportBtn">未完了者リスト生成</button>
+                </div>
+            </div>
+            <div class="summary-line" id="periodicSummary"></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>チーム</th>
+                            <th class="center">スキルシート更新</th>
+                            <th class="center">スキルマトリクス更新</th>
+                            <th class="center">CS調査回収</th>
+                            <th class="center">目標設定／更新</th>
+                            <th class="center">成長ポイント記入</th>
+                        </tr>
+                    </thead>
+                    <tbody id="periodicTaskTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -1566,6 +1687,42 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="periodicPeriodModalOverlay">
+        <div class="modal">
+            <h2>対象期間変更</h2>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>対象期間ラベル</label>
+                    <input type="text" id="periodicPeriodInput" placeholder="2026下期">
+                </div>
+            </div>
+            <div class="periodic-reset-warning">
+                期間を変更すると、全メンバーの全タスク状態が「未」にリセットされます。この操作は元に戻せません。
+            </div>
+            <div class="modal-footer">
+                <div></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="periodicPeriodCancelBtn">キャンセル</button>
+                    <button class="btn-save" id="periodicPeriodSaveBtn">変更してリセット</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="periodicExportModalOverlay">
+        <div class="modal modal-wide team-export-modal">
+            <h2>未完了者リスト</h2>
+            <textarea id="periodicExportOutput" class="team-export-textarea" readonly></textarea>
+            <div class="modal-footer">
+                <div class="team-export-copy-status" id="periodicExportCopyStatus"></div>
+                <div class="modal-footer-right">
+                    <button class="btn-cancel" id="periodicExportCloseBtn">閉じる</button>
+                    <button class="btn-save" id="periodicExportCopyBtn">コピー</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // =========================================================
         // 定数
@@ -1581,6 +1738,11 @@
         const TEST_BASE_DATE_KEY = 'kadou_test_base_date';
         const RECIPIENT_SETTINGS_KEY = 'kadou_recipient_settings';
         const RECIPIENT_MODE_KEY = 'kadou_recipient_mode';
+        const PERIODIC_TASKS_KEY = 'granavi_periodicTasks';
+        const PERIODIC_DEFAULT_PERIOD_LABEL = '2026下期';
+        const PERIODIC_TASK_ITEMS = ['スキルシート更新', 'スキルマトリクス更新', 'CS調査回収', '目標設定／更新', '成長ポイント記入'];
+        const PERIODIC_TASK_STATUS_ORDER = ['未', '済', '対象外'];
+        const MEMBER_LOCAL_STORAGE_KEY_PREFIXES = [];
 
         // =========================================================
         // 状態変数（既存）
@@ -1600,6 +1762,291 @@
         let currentYearMonth       = getCurrentYearMonth();
         let editingMonthlyMemberId = null;
         let recipientSettings      = {};
+        let periodicTasksState     = null;
+        let periodicHideCompletedOnly = false;
+
+        function getRandomAlphaNumeric(length = 10) {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let value = '';
+            for (let i = 0; i < length; i += 1) {
+                value += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return value;
+        }
+
+        function generateMemberId(usedIds = null) {
+            const existingIds = usedIds || new Set(members.map(member => member && member.id).filter(Boolean));
+            let id = '';
+            do {
+                id = `m_${getRandomAlphaNumeric(10)}`;
+            } while (existingIds.has(id));
+            existingIds.add(id);
+            return id;
+        }
+
+        function applyMemberDefaults(member) {
+            return {
+                followOwner: "",
+                taiki_goal: "",
+                taiki_progress: "",
+                taiki_issue: "",
+                ...member
+            };
+        }
+
+        function assignMissingMemberIds(memberList) {
+            const usedIds = new Set(memberList.map(member => member && member.id).filter(Boolean));
+            const normalizedMembers = memberList.map(member => {
+                const normalized = applyMemberDefaults(member);
+                if (normalized.id) return normalized;
+                return {
+                    ...normalized,
+                    id: generateMemberId(usedIds)
+                };
+            });
+            return { members: normalizedMembers };
+        }
+
+        function cleanupDeletedMemberLocalStorage(memberId) {
+            if (!memberId || MEMBER_LOCAL_STORAGE_KEY_PREFIXES.length === 0) return;
+            try {
+                MEMBER_LOCAL_STORAGE_KEY_PREFIXES.forEach(prefix => {
+                    const keysToRemove = [];
+                    for (let i = 0; i < localStorage.length; i += 1) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith(`${prefix}${memberId}`)) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(key => localStorage.removeItem(key));
+                });
+            } catch (e) {
+                // localStorage cleanup failure should not block member deletion
+            }
+        }
+
+        function getDefaultPeriodicTaskValues() {
+            return PERIODIC_TASK_ITEMS.reduce((acc, taskName) => {
+                acc[taskName] = '未';
+                return acc;
+            }, {});
+        }
+
+        function getDefaultPeriodicTasksState() {
+            return {
+                periodLabel: PERIODIC_DEFAULT_PERIOD_LABEL,
+                taskStates: {}
+            };
+        }
+
+        function normalizePeriodicMemberTaskStates(taskState) {
+            const defaults = getDefaultPeriodicTaskValues();
+            const source = taskState && typeof taskState === 'object' ? taskState : {};
+            PERIODIC_TASK_ITEMS.forEach(taskName => {
+                defaults[taskName] = PERIODIC_TASK_STATUS_ORDER.includes(source[taskName]) ? source[taskName] : '未';
+            });
+            return defaults;
+        }
+
+        function loadPeriodicTasks() {
+            const defaults = getDefaultPeriodicTasksState();
+            try {
+                const raw = localStorage.getItem(PERIODIC_TASKS_KEY);
+                if (!raw) return defaults;
+                const parsed = JSON.parse(raw);
+                const sourceTaskStates = parsed && typeof parsed === 'object' && parsed.taskStates && typeof parsed.taskStates === 'object'
+                    ? parsed.taskStates
+                    : {};
+                const taskStates = Object.keys(sourceTaskStates).reduce((acc, memberId) => {
+                    acc[memberId] = normalizePeriodicMemberTaskStates(sourceTaskStates[memberId]);
+                    return acc;
+                }, {});
+                return {
+                    periodLabel: String(parsed && parsed.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL).trim() || PERIODIC_DEFAULT_PERIOD_LABEL,
+                    taskStates
+                };
+            } catch (e) {
+                return defaults;
+            }
+        }
+
+        function savePeriodicTasks() {
+            if (!periodicTasksState) return;
+            try {
+                localStorage.setItem(PERIODIC_TASKS_KEY, JSON.stringify(periodicTasksState));
+            } catch (e) {
+                // ignore localStorage failures
+            }
+        }
+
+        function syncPeriodicTasksWithMembers() {
+            if (!periodicTasksState) {
+                periodicTasksState = loadPeriodicTasks();
+            }
+            let changed = false;
+            const nextTaskStates = { ...(periodicTasksState.taskStates || {}) };
+            members.forEach(member => {
+                if (!member || !member.id) return;
+                const currentState = nextTaskStates[member.id];
+                const normalized = normalizePeriodicMemberTaskStates(currentState);
+                if (!currentState || JSON.stringify(currentState) !== JSON.stringify(normalized)) {
+                    nextTaskStates[member.id] = normalized;
+                    changed = true;
+                }
+            });
+            periodicTasksState = {
+                periodLabel: periodicTasksState.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL,
+                taskStates: nextTaskStates
+            };
+            if (changed) savePeriodicTasks();
+        }
+
+        function removePeriodicTasksForMember(memberId) {
+            if (!periodicTasksState || !memberId || !periodicTasksState.taskStates || !periodicTasksState.taskStates[memberId]) return;
+            const nextTaskStates = { ...periodicTasksState.taskStates };
+            delete nextTaskStates[memberId];
+            periodicTasksState = {
+                ...periodicTasksState,
+                taskStates: nextTaskStates
+            };
+            savePeriodicTasks();
+        }
+
+        function getPeriodicMembers() {
+            syncPeriodicTasksWithMembers();
+            const filterVal = document.getElementById('periodicTeamFilter').value;
+            return sortMembers(members.filter(member => {
+                if (filterVal && member.team !== filterVal) return false;
+                if (!periodicHideCompletedOnly) return true;
+                const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
+                return PERIODIC_TASK_ITEMS.some(taskName => taskStates[taskName] === '未');
+            }));
+        }
+
+        function getPeriodicStatusClass(status) {
+            if (status === '済') return 'periodic-status-done';
+            if (status === '対象外') return 'periodic-status-na';
+            return 'periodic-status-pending';
+        }
+
+        function updatePeriodicControls() {
+            document.getElementById('periodicPeriodLabel').textContent = periodicTasksState && periodicTasksState.periodLabel
+                ? periodicTasksState.periodLabel
+                : PERIODIC_DEFAULT_PERIOD_LABEL;
+            document.getElementById('periodicIncompleteToggleBtn').textContent = `未のみ表示: ${periodicHideCompletedOnly ? 'ON' : 'OFF'}`;
+        }
+
+        function renderPeriodicTaskTable() {
+            const tbody = document.getElementById('periodicTaskTableBody');
+            if (!tbody) return;
+            syncPeriodicTasksWithMembers();
+            updatePeriodicControls();
+            const visibleMembers = getPeriodicMembers();
+            const hiddenCount = members.length - visibleMembers.length;
+            document.getElementById('periodicSummary').textContent = periodicHideCompletedOnly
+                ? `表示: ${visibleMembers.length}名　｜　非表示: ${hiddenCount}名`
+                : `表示: ${visibleMembers.length}名`;
+
+            if (visibleMembers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="periodic-empty">表示対象のメンバーがいません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = visibleMembers.map(member => {
+                const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
+                const cells = PERIODIC_TASK_ITEMS.map(taskName => {
+                    const status = taskStates[taskName] || '未';
+                    return `<td class="periodic-status-cell">
+                        <button type="button" class="periodic-status-btn ${getPeriodicStatusClass(status)}"
+                                data-member-id="${escHtml(member.id)}"
+                                data-task-name="${escHtml(taskName)}">${escHtml(status)}</button>
+                    </td>`;
+                }).join('');
+                return `<tr>
+                    <td class="name-cell">${escHtml(member.name)}</td>
+                    <td class="team-cell">${escHtml(member.team)}</td>
+                    ${cells}
+                </tr>`;
+            }).join('');
+        }
+
+        function togglePeriodicTaskStatus(memberId, taskName) {
+            syncPeriodicTasksWithMembers();
+            const currentState = normalizePeriodicMemberTaskStates(periodicTasksState.taskStates[memberId]);
+            const currentIndex = PERIODIC_TASK_STATUS_ORDER.indexOf(currentState[taskName]);
+            const nextStatus = PERIODIC_TASK_STATUS_ORDER[(currentIndex + 1) % PERIODIC_TASK_STATUS_ORDER.length];
+            periodicTasksState = {
+                ...periodicTasksState,
+                taskStates: {
+                    ...periodicTasksState.taskStates,
+                    [memberId]: {
+                        ...currentState,
+                        [taskName]: nextStatus
+                    }
+                }
+            };
+            savePeriodicTasks();
+            renderPeriodicTaskTable();
+        }
+
+        function openPeriodicPeriodModal() {
+            syncPeriodicTasksWithMembers();
+            document.getElementById('periodicPeriodInput').value = periodicTasksState.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL;
+            document.getElementById('periodicPeriodModalOverlay').classList.add('visible');
+            setTimeout(() => document.getElementById('periodicPeriodInput').focus(), 50);
+        }
+
+        function closePeriodicPeriodModal() {
+            document.getElementById('periodicPeriodModalOverlay').classList.remove('visible');
+        }
+
+        function applyPeriodicPeriodReset() {
+            const nextLabel = String(document.getElementById('periodicPeriodInput').value || '').trim() || PERIODIC_DEFAULT_PERIOD_LABEL;
+            const nextTaskStates = {};
+            members.forEach(member => {
+                if (!member || !member.id) return;
+                nextTaskStates[member.id] = getDefaultPeriodicTaskValues();
+            });
+            periodicTasksState = {
+                periodLabel: nextLabel,
+                taskStates: nextTaskStates
+            };
+            savePeriodicTasks();
+            renderPeriodicTaskTable();
+            closePeriodicPeriodModal();
+        }
+
+        function buildPeriodicPendingText() {
+            syncPeriodicTasksWithMembers();
+            const targetMembers = getPeriodicMembers();
+            const lines = PERIODIC_TASK_ITEMS.map(taskName => {
+                const pendingNames = sortMembers(targetMembers.filter(member => {
+                    const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
+                    return taskStates[taskName] === '未';
+                })).map(member => member.name);
+                if (pendingNames.length === 0) return '';
+                return `【${taskName}】\n${pendingNames.join('、')}`;
+            }).filter(Boolean);
+            return lines.length > 0 ? lines.join('\n\n') : '未完了のタスクはありません。';
+        }
+
+        function openPeriodicExportModal() {
+            renderPeriodicTaskTable();
+            document.getElementById('periodicExportOutput').value = buildPeriodicPendingText();
+            document.getElementById('periodicExportCopyStatus').textContent = '';
+            document.getElementById('periodicExportModalOverlay').classList.add('visible');
+        }
+
+        function closePeriodicExportModal() {
+            document.getElementById('periodicExportModalOverlay').classList.remove('visible');
+        }
+
+        async function copyPeriodicExportText() {
+            const copied = await copyTextToClipboard(document.getElementById('periodicExportOutput').value);
+            document.getElementById('periodicExportCopyStatus').textContent = copied
+                ? 'テキストをコピーしました'
+                : 'コピーに失敗しました';
+        }
 
         // =========================================================
         // 初期化
@@ -1622,6 +2069,8 @@
             }
 
             recipientSettings = loadRecipientSettings();
+            periodicTasksState = loadPeriodicTasks();
+            syncPeriodicTasksWithMembers();
             populateTeamSelects();
             setupEventListeners();
             updateTestBaseDateUI();
@@ -1710,13 +2159,7 @@
                 const res  = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const data = await res.json();
                 members      = data.value ? JSON.parse(data.value) : [];
-                members      = members.map(m => ({
-                    followOwner: "",
-                    taiki_goal: "",
-                    taiki_progress: "",
-                    taiki_issue: "",
-                    ...m
-                }));
+                members      = assignMissingMemberIds(members).members;
                 lastLoadedAt = data.updated_at;
                 fetchedAt    = new Date();
                 updateFetchStatus();
@@ -1743,6 +2186,7 @@
         async function saveMembers() {
             try {
                 showSavingIndicator(true);
+                members = assignMissingMemberIds(members).members;
                 const check  = await fetch(`${GAS_URL}?key=${STORAGE_KEY}`);
                 const latest = await check.json();
                 if (latest.updated_at && latest.updated_at !== lastLoadedAt) {
@@ -2987,13 +3431,17 @@
         // =========================================================
         function switchTab(tab) {
             const isMonthly = (tab === 'monthly');
-            document.getElementById('kadouSection').style.display   = isMonthly ? 'none' : '';
-            document.getElementById('monthlySection').style.display = isMonthly ? ''     : 'none';
-            document.getElementById('addMemberBtn').style.display   = isMonthly ? 'none' : '';
-            document.getElementById('teamExportBtn').style.display  = isMonthly ? 'none' : '';
-            document.getElementById('teamFilter').style.display     = isMonthly ? 'none' : '';
-            document.getElementById('tabKadou').classList.toggle('active',   !isMonthly);
+            const isPeriodic = (tab === 'periodic');
+            document.getElementById('kadouSection').style.display   = (!isMonthly && !isPeriodic) ? '' : 'none';
+            document.getElementById('monthlySection').style.display = isMonthly ? '' : 'none';
+            document.getElementById('periodicSection').style.display = isPeriodic ? '' : 'none';
+            document.getElementById('addMemberBtn').style.display   = (isMonthly || isPeriodic) ? 'none' : '';
+            document.getElementById('teamExportBtn').style.display  = (isMonthly || isPeriodic) ? 'none' : '';
+            document.getElementById('teamFilter').style.display     = (isMonthly || isPeriodic) ? 'none' : '';
+            document.getElementById('kadouFocusFilter').style.display = (isMonthly || isPeriodic) ? 'none' : '';
+            document.getElementById('tabKadou').classList.toggle('active',   !isMonthly && !isPeriodic);
             document.getElementById('tabMonthly').classList.toggle('active',  isMonthly);
+            document.getElementById('tabPeriodic').classList.toggle('active', isPeriodic);
 
             if (isMonthly) {
                 currentYearMonth = getCurrentYearMonth();
@@ -3001,6 +3449,10 @@
                 populateMonthlyTeamSelect();
                 updateMonthDisplay();
                 renderMonthlyTable();
+            }
+
+            if (isPeriodic) {
+                renderPeriodicTaskTable();
             }
         }
 
@@ -3044,6 +3496,15 @@
                 o.value = t; o.textContent = t;
                 teamInput.appendChild(o);
             });
+            const periodicFilter = document.getElementById('periodicTeamFilter');
+            const currentPeriodic = periodicFilter.value;
+            periodicFilter.innerHTML = '<option value="">全てのチーム</option>';
+            TEAMS.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                periodicFilter.appendChild(o);
+            });
+            if (currentPeriodic) periodicFilter.value = currentPeriodic;
         }
 
         function populateMonthlyTeamSelect() {
@@ -3488,7 +3949,7 @@
             const statusType = document.getElementById('statusTypeInput').value;
             const isWaiting = statusType === '待機中';
             const record = {
-                id:            editingMemberId || ('m_' + Date.now()),
+                id:            editingMemberId || generateMemberId(),
                 name,
                 team,
                 status_type:   statusType,
@@ -3517,6 +3978,7 @@
                 await saveMonthlyRecordsQuiet();
             }
             renderTable();
+            renderPeriodicTaskTable();
             closeModal();
         }
 
@@ -3526,7 +3988,10 @@
             if (!m || !confirm(`「${m.name}」を削除してもよろしいですか？`)) return;
             members = members.filter(x => x.id !== editingMemberId);
             await saveMembers();
+            cleanupDeletedMemberLocalStorage(m.id);
+            removePeriodicTasksForMember(m.id);
             renderTable();
+            renderPeriodicTaskTable();
             closeModal();
         }
 
@@ -3537,6 +4002,7 @@
             // タブ
             document.getElementById('tabKadou').addEventListener('click',   () => switchTab('kadou'));
             document.getElementById('tabMonthly').addEventListener('click', () => switchTab('monthly'));
+            document.getElementById('tabPeriodic').addEventListener('click', () => switchTab('periodic'));
 
             // 稼働一覧（既存）
             document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
@@ -3564,6 +4030,24 @@
         document.getElementById('modalOverlay').addEventListener('click', e => {
             if (e.target === document.getElementById('modalOverlay')) closeModal();
         });
+
+            // 定期タスク確認
+            document.getElementById('periodicTeamFilter').addEventListener('change', renderPeriodicTaskTable);
+            document.getElementById('periodicIncompleteToggleBtn').addEventListener('click', () => {
+                periodicHideCompletedOnly = !periodicHideCompletedOnly;
+                renderPeriodicTaskTable();
+            });
+            document.getElementById('periodicPeriodChangeBtn').addEventListener('click', openPeriodicPeriodModal);
+            document.getElementById('periodicExportBtn').addEventListener('click', openPeriodicExportModal);
+            document.getElementById('periodicPeriodCancelBtn').addEventListener('click', closePeriodicPeriodModal);
+            document.getElementById('periodicPeriodSaveBtn').addEventListener('click', applyPeriodicPeriodReset);
+            document.getElementById('periodicExportCloseBtn').addEventListener('click', closePeriodicExportModal);
+            document.getElementById('periodicExportCopyBtn').addEventListener('click', copyPeriodicExportText);
+            document.getElementById('periodicTaskTableBody').addEventListener('click', e => {
+                const btn = e.target.closest('[data-member-id][data-task-name]');
+                if (!btn) return;
+                togglePeriodicTaskStatus(btn.dataset.memberId, btn.dataset.taskName);
+            });
 
             // 月次実績（新規）
             document.getElementById('monthPrevBtn').addEventListener('click',    () => changeMonth(-1));
@@ -3597,6 +4081,12 @@
             document.getElementById('monthlyDraftModalOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('monthlyDraftModalOverlay')) closeMonthlyDraftModal();
             });
+            document.getElementById('periodicPeriodModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('periodicPeriodModalOverlay')) closePeriodicPeriodModal();
+            });
+            document.getElementById('periodicExportModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('periodicExportModalOverlay')) closePeriodicExportModal();
+            });
             document.getElementById('recipientSettingsOverlay').addEventListener('click', e => {
                 if (e.target === document.getElementById('recipientSettingsOverlay')) closeRecipientSettingsModal();
             });
@@ -3610,10 +4100,13 @@
                     closeReminderModal();
                     closeTeamExportModal();
                     closeMonthlyDraftModal();
+                    closePeriodicPeriodModal();
+                    closePeriodicExportModal();
                 }
                 if (e.ctrlKey && e.key === 'Enter') {
                     if (document.getElementById('modalOverlay').classList.contains('visible'))        saveMember();
                     if (document.getElementById('monthlyModalOverlay').classList.contains('visible')) saveMonthlyRecord();
+                    if (document.getElementById('periodicPeriodModalOverlay').classList.contains('visible')) applyPeriodicPeriodReset();
                 }
             });
         }
