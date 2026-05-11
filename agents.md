@@ -111,9 +111,12 @@ Do not modify existing tabs (稼働一覧, 月次実績, 定期タスク確認).
 ### KOT File Parsing
 - KOT export files (.xls) are actually HTML, not binary Excel.
 - Parse using DOMParser in the browser. No library needed.
-- Required columns: 名前, 所属, 欠勤日数
 - Name field format in KOT: "00201 豊田 淳" → split on space, [0]=kotId, [1+]=displayName
 - Skip rows where kotId does not match /^\d+$/ (skip totals row)
+- Required columns: 名前, 所属, 欠勤日数, 有休日数
+- absenceDays = 欠勤日数 + 有休日数（両列の合計値）
+- 有休日数列が空欄の場合は 0 扱い。
+- テーブルの列名表示は「欠勤日数」→「欠勤＋有休日数」に変更。
 
 ### Thresholds (user-configurable, persisted in localStorage)
 - Alert (警戒): absenceDays >= alertThreshold（デフォルト: 3）
