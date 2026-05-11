@@ -1259,6 +1259,41 @@
         }
 
         /* ── コンディションシグナル ── */
+        .cs-threshold-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+            font-size: 0.8125rem;
+            color: #475569;
+        }
+        .cs-threshold-group {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        .cs-threshold-input {
+            width: 4rem;
+            padding: 0.25rem 0.4rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            text-align: center;
+            color: #1e293b;
+        }
+        .cs-threshold-error {
+            color: #dc2626;
+            font-size: 0.75rem;
+            display: none;
+        }
+        .cs-notice {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.875rem;
+        }
+
         .cs-upload-area {
             display: flex;
             gap: 1.5rem;
@@ -1551,6 +1586,29 @@
                 <button class="cs-run-btn" id="csRunBtn" disabled>集計実行</button>
             </div>
 
+            <!-- ファイル順序警告 -->
+            <div class="cs-threshold-error" id="csFileOrderWarning" style="display:none;margin-bottom:0.375rem">
+                当月・先月のファイルが逆の可能性があります。当月欄には新しい月、先月欄には古い月を入れてください。
+            </div>
+
+            <!-- 閾値設定行 -->
+            <div class="cs-threshold-row">
+                <div class="cs-threshold-group">
+                    <label for="csAlertThreshold">警戒ライン:</label>
+                    <input type="number" id="csAlertThreshold" class="cs-threshold-input" min="1" value="3">
+                    <span>日以上</span>
+                </div>
+                <div class="cs-threshold-group">
+                    <label for="csWatchThreshold">表示ライン:</label>
+                    <input type="number" id="csWatchThreshold" class="cs-threshold-input" min="1" value="2">
+                    <span>日以上</span>
+                </div>
+                <span class="cs-threshold-error" id="csThresholdError">警戒ラインは表示ラインより大きい値にしてください</span>
+            </div>
+
+            <!-- 運用注記 -->
+            <div class="cs-notice">※集計精度はKOTの日次入力が前提です。毎週月曜朝に実行してください。</div>
+
             <!-- 2-2. サマリー行 -->
             <div class="cs-summary-bar" id="csSummaryBar" style="display:none">
                 <div class="cs-stat">
@@ -1577,11 +1635,11 @@
 
                 <!-- 2-3. 警戒者テーブル -->
                 <div id="csAlertSection" style="display:none">
-                    <div class="cs-section-label">警戒者（欠勤3日以上）</div>
+                    <div class="cs-section-label" id="csAlertLabel">警戒者（欠勤＋有休3日以上）</div>
                     <div class="cs-table-wrap">
                         <table class="cs-table">
                             <thead><tr>
-                                <th>氏名</th><th>所属</th><th>欠勤日数</th>
+                                <th>氏名</th><th>所属</th><th>欠勤＋有休日数</th>
                                 <th>傾向</th><th>担当</th><th>メモ</th>
                             </tr></thead>
                             <tbody id="csAlertBody"></tbody>
@@ -1591,11 +1649,11 @@
 
                 <!-- 2-4. 要注意テーブル -->
                 <div id="csWatchSection" style="display:none">
-                    <div class="cs-section-label">要注意（欠勤2日）</div>
+                    <div class="cs-section-label" id="csWatchLabel">要注意（欠勤2日）</div>
                     <div class="cs-table-wrap">
                         <table class="cs-table">
                             <thead><tr>
-                                <th>氏名</th><th>所属</th><th>欠勤日数</th>
+                                <th>氏名</th><th>所属</th><th>欠勤＋有休日数</th>
                                 <th>傾向</th><th>担当</th><th>メモ</th>
                             </tr></thead>
                             <tbody id="csWatchBody"></tbody>
@@ -3636,6 +3694,42 @@
         // コンディションシグナル
         // =========================================================
         const CS_KEY = 'granavi_conditionSignal';
+        const CS_THRESHOLD_KEY = 'granavi_csThresholds';
+        const CS_THRESHOLD_DEFAULT = { alertThreshold: 3, watchThreshold: 2 };
+
+        function loadCsThresholds() {
+            try {
+                const t = JSON.parse(localStorage.getItem(CS_THRESHOLD_KEY));
+                if (t && typeof t.alertThreshold === 'number' && typeof t.watchThreshold === 'number') return t;
+            } catch(e) {}
+            return { ...CS_THRESHOLD_DEFAULT };
+        }
+
+        function saveCsThresholds(t) {
+            localStorage.setItem(CS_THRESHOLD_KEY, JSON.stringify(t));
+        }
+
+        function initCsThresholdUI() {
+            const t = loadCsThresholds();
+            document.getElementById('csAlertThreshold').value = t.alertThreshold;
+            document.getElementById('csWatchThreshold').value = t.watchThreshold;
+        }
+
+        function onCsThresholdChange() {
+            const alertVal = parseInt(document.getElementById('csAlertThreshold').value, 10);
+            const watchVal = parseInt(document.getElementById('csWatchThreshold').value, 10);
+            const errEl = document.getElementById('csThresholdError');
+            // 逆転・等値（alertThreshold <= watchThreshold）または未入力はエラー
+            if (isNaN(alertVal) || isNaN(watchVal) || alertVal <= watchVal) {
+                errEl.style.display = 'inline'; // display:none を上書きするため明示
+                return; // 保存・再描画しない
+            }
+            errEl.style.display = 'none';
+            saveCsThresholds({ alertThreshold: alertVal, watchThreshold: watchVal });
+            renderConditionSignal();
+        }
+
+
         const CS_MAX_SNAPSHOTS = 12;
         const TREND_OPTIONS = ['慢性', '一時的', '増加傾向', '改善傾向', '再発', '要確認'];
 
@@ -3667,7 +3761,7 @@
             const rows = Array.from(doc.querySelectorAll('tr'));
             const members = [];
             // ヘッダ行から列インデックスを特定
-            let nameIdx = -1, deptIdx = -1, absenceIdx = -1;
+            let nameIdx = -1, deptIdx = -1, absenceIdx = -1, paidLeaveIdx = -1;
             for (const row of rows) {
                 const cells = Array.from(row.querySelectorAll('th, td'));
                 const texts = cells.map(c => c.textContent.trim());
@@ -3676,8 +3770,9 @@
                     const ni = texts.findIndex(t => t.includes('名前') || t.includes('氏名'));
                     const di = texts.findIndex(t => t.includes('所属') || t.includes('部署'));
                     const ai = texts.findIndex(t => t.includes('欠勤'));
+                    const pi = texts.findIndex(t => t.includes('有休') || t.includes('有給'));
                     if (ni >= 0 && ai >= 0) {
-                        nameIdx = ni; deptIdx = di; absenceIdx = ai;
+                        nameIdx = ni; deptIdx = di; absenceIdx = ai; paidLeaveIdx = pi;
                         continue;
                     }
                 }
@@ -3693,10 +3788,21 @@
                 const displayName = parts.slice(1).join(' ');
                 const dept = deptIdx >= 0 ? (cells2[deptIdx] || {textContent:''}).textContent.trim() : '';
                 const absRaw = (cells2[absenceIdx] || {textContent:'0'}).textContent.trim();
-                const absenceDays = parseFloat(absRaw) || 0;
+                const paidRaw = paidLeaveIdx >= 0 ? (cells2[paidLeaveIdx] || {textContent:'0'}).textContent.trim() : '0';
+                // absenceDays = 欠勤日数 + 有休日数（空欄・NaN は 0 扱い）
+                const absenceDays = (parseFloat(absRaw) || 0) + (parseFloat(paidRaw) || 0);
                 members.push({ kotId, name: displayName, dept, absenceDays });
             }
-            return { members, snapshotMonth };
+            // periodStart: h2から取得した最初のYYYY/MM/DD（なければ""）
+            const periodStart = (() => {
+                for (const h2 of h2s) {
+                    const t = h2.textContent.trim();
+                    const pm = t.match(/(\d{4}\/\d{2}\/\d{2})/);
+                    if (pm) return pm[1];
+                }
+                return '';
+            })();
+            return { members, snapshotMonth, periodStart };
         }
 
         // スナップショット読み込み
@@ -3715,13 +3821,14 @@
 
         // 慢性判定・傾向自動割り当て
         function computeChronicAndTrend(currentMembers, prevMembers) {
+            const { alertThreshold, watchThreshold } = loadCsThresholds();
             const prevMap = {};
             (prevMembers || []).forEach(m => { prevMap[m.kotId] = m; });
 
             return currentMembers.map(m => {
                 const prev = prevMap[m.kotId];
-                const isAlert = m.absenceDays >= 3;
-                const isWatch = m.absenceDays === 2;
+                const isAlert = m.absenceDays >= alertThreshold;
+                const isWatch = m.absenceDays >= watchThreshold && m.absenceDays < alertThreshold;
                 const prevAlert = prev ? prev.isAlert : false;
                 const chronicFlag = isAlert && prevAlert;
 
@@ -3782,7 +3889,7 @@
             if (!currentFile) return;
 
             const currentRaw = await currentFile.text();
-            const { members: currentParsed, snapshotMonth } = parseKOTData(currentRaw);
+            const { members: currentParsed, snapshotMonth, periodStart: currentPeriodStart } = parseKOTData(currentRaw);
             if (currentParsed.length === 0) {
                 alert('当月ファイルからメンバーデータを取得できませんでした。\nKOT形式のHTMLファイルか確認してください。');
                 return;
@@ -3790,18 +3897,37 @@
 
             // 先月ファイル（任意）
             let prevParsed = [];
+            let prevPeriodStart = '';
             const prevFile = document.getElementById('csPrevFile').files[0];
+            let prevResult = null;
             if (prevFile) {
                 const prevRaw = await prevFile.text();
-                prevParsed = parseKOTData(prevRaw).members;
+                prevResult = parseKOTData(prevRaw);
+                prevParsed = prevResult.members;
+                prevPeriodStart = prevResult.periodStart;
             }
             const importedAt = new Date().toISOString().slice(0, 10);
 
+            // ファイル順序チェック（先月ファイルがある場合のみ）
+            const fileOrderWarnEl = document.getElementById('csFileOrderWarning');
+            if (prevFile && prevResult && prevResult.snapshotMonth) {
+                // 当月 <= 先月 なら順序逆の可能性
+                if (snapshotMonth <= prevResult.snapshotMonth) {
+                    fileOrderWarnEl.style.display = 'block';
+                } else {
+                    fileOrderWarnEl.style.display = 'none';
+                }
+            } else {
+                fileOrderWarnEl.style.display = 'none';
+            }
+            // 警告があっても実行を継続する
+
             // 慢性・傾向計算
+            const { alertThreshold: at, watchThreshold: wt } = loadCsThresholds();
             let members = computeChronicAndTrend(currentParsed, prevParsed.length > 0 ? prevParsed.map(m => ({
                 ...m,
-                isAlert: m.absenceDays >= 3,
-                isWatch: m.absenceDays === 2
+                isAlert: m.absenceDays >= at,
+                isWatch: m.absenceDays >= wt && m.absenceDays < at
             })) : []);
 
             // スナップショット管理
@@ -3819,9 +3945,9 @@
                     }
                     return m;
                 });
-                snapshots[existingIdx] = { snapshotMonth, importedAt, members };
+                snapshots[existingIdx] = { snapshotMonth, importedAt, periodStart: currentPeriodStart, prevPeriodStart, members };
             } else {
-                snapshots.push({ snapshotMonth, importedAt, members });
+                snapshots.push({ snapshotMonth, importedAt, periodStart: currentPeriodStart, prevPeriodStart, members });
                 // 上限超過時は最古を削除
                 if (snapshots.length > CS_MAX_SNAPSHOTS) {
                     snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
@@ -3840,6 +3966,7 @@
 
         // コンディションシグナル描画
         function renderConditionSignal() {
+            const { alertThreshold, watchThreshold } = loadCsThresholds();
             const snapshots = loadCsSnapshots();
             snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
             const latest = snapshots[snapshots.length - 1];
@@ -3861,10 +3988,30 @@
 
             emptyMsg.style.display = 'none';
 
-            const members = latest.members || [];
+            // 閾値を再適用してメンバーを再フィルタ（スナップショット保存時と閾値が変わった場合に対応）
+            const members = (latest.members || []).map(m => ({
+                ...m,
+                isAlert: m.absenceDays >= alertThreshold,
+                isWatch: m.absenceDays >= watchThreshold && m.absenceDays < alertThreshold
+            }));
             const alertMembers   = members.filter(m => m.isAlert);
             const watchMembers   = members.filter(m => m.isWatch);
             const chronicCount   = members.filter(m => m.chronicFlag).length;
+
+            // 期間ラベル生成
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+            // 先月ファイルがあれば先月periodStartを起点、なければ当月periodStart
+            const basePeriodStart = (latest.prevPeriodStart && latest.prevPeriodStart !== '')
+                ? latest.prevPeriodStart
+                : (latest.periodStart || '');
+            const periodSuffix = basePeriodStart ? ` ― ${basePeriodStart}〜${todayStr}` : '';
+
+            // セクションラベル更新
+            document.getElementById('csAlertLabel').textContent =
+                `警戒者（欠勤＋有休${alertThreshold}日以上）${periodSuffix}`;
+            document.getElementById('csWatchLabel').textContent =
+                `要注意（欠勤＋有休${watchThreshold}日以上${alertThreshold}日未満）${periodSuffix}`;
 
             // サマリー更新
             summaryBar.style.display = '';
@@ -3890,7 +4037,7 @@
             }
 
             // 過去の警戒者
-            const pastMembers = buildPastAlertMembers(snapshots);
+            const pastMembers = buildPastAlertMembers(snapshots, alertThreshold, watchThreshold);
             if (pastMembers.length > 0) {
                 pastSection.style.display = '';
                 renderCsPastTable('csPastBody', pastMembers);
@@ -3985,10 +4132,14 @@
 
         // 過去の警戒者リスト構築
         // 直近スナップショットでabsenceDays<2、過去12件中にisAlert:trueが1件以上
-        function buildPastAlertMembers(snapshots) {
+        function buildPastAlertMembers(snapshots, alertThreshold, watchThreshold) {
             if (snapshots.length === 0) return [];
             const latest = snapshots[snapshots.length - 1];
-            const latestMembers = latest.members || [];
+            const latestMembers = (latest.members || []).map(m => ({
+                ...m,
+                isAlert: m.absenceDays >= alertThreshold,
+                isWatch: m.absenceDays >= watchThreshold && m.absenceDays < alertThreshold
+            }));
             const latestActiveIds = new Set(
                 latestMembers.filter(m => m.isAlert || m.isWatch).map(m => m.kotId)
             );
@@ -3998,7 +4149,8 @@
             const pastMap = {};
             allPast.forEach(snap => {
                 (snap.members || []).forEach(m => {
-                    if (!m.isAlert) return;
+                    const isAlertHist = m.absenceDays >= alertThreshold;
+                    if (!isAlertHist) return;
                     if (!pastMap[m.kotId]) {
                         pastMap[m.kotId] = { name: m.name, dept: m.dept, lastAlertMonth: snap.snapshotMonth, peakAbsenceDays: m.absenceDays };
                     } else {
@@ -4051,6 +4203,7 @@
                 renderPeriodicTaskTable();
             }
             if (isCondition) {
+                initCsThresholdUI();
                 renderConditionSignal();
             }
         }
@@ -4606,6 +4759,8 @@
             // コンディションシグナル
             document.getElementById('csCurrentFile').addEventListener('change', onCsCurrentFileChange);
             document.getElementById('csRunBtn').addEventListener('click', onCsRunClick);
+            document.getElementById('csAlertThreshold').addEventListener('input', onCsThresholdChange);
+            document.getElementById('csWatchThreshold').addEventListener('input', onCsThresholdChange);
 
             // 稼働一覧（既存）
             document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
