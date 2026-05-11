@@ -1257,6 +1257,121 @@
             .recipient-settings-table thead { display: none; }
             .recipient-settings-table td { padding: 0.4rem 0; border-bottom: none; }
         }
+
+        /* ── コンディションシグナル ── */
+        .cs-upload-area {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+        }
+        .cs-file-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .cs-file-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .cs-file-input {
+            font-size: 0.8125rem;
+            color: #334155;
+        }
+        .cs-run-btn {
+            padding: 0.5rem 1rem;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .cs-run-btn:hover:not(:disabled) { background: #334155; }
+        .cs-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .cs-summary-bar {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .cs-stat {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.625rem 1rem;
+            min-width: 110px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .cs-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+        .cs-stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.125rem;
+        }
+        .cs-section-label {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #334155;
+            margin: 1.25rem 0 0.5rem;
+            padding-bottom: 0.375rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .cs-table-wrap { overflow-x: auto; margin-bottom: 0.5rem; }
+        .cs-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            font-size: 0.8125rem;
+        }
+        .cs-table th {
+            padding: 0.5rem 0.75rem;
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .cs-table td {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .cs-table tbody tr:last-child td { border-bottom: none; }
+        .cs-row-alert { background: #fff1f2; }
+        .cs-row-watch { background: #fefce8; }
+        .cs-row-past  { opacity: 0.6; }
+        .cs-trend-select, .cs-text-input {
+            font-size: 0.8125rem;
+            padding: 0.25rem 0.4rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            background: white;
+            color: #1e293b;
+            font-family: inherit;
+        }
+        .cs-text-input { width: 100%; min-width: 80px; }
+        .cs-empty-msg {
+            padding: 2rem;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
@@ -1280,6 +1395,7 @@
             <button class="tab-btn active" id="tabKadou">稼働一覧</button>
             <button class="tab-btn" id="tabMonthly">月次実績</button>
             <button class="tab-btn" id="tabPeriodic">定期タスク確認</button>
+            <button class="tab-btn" id="tabCondition">コンディションシグナル</button>
         </div>
     </div>
 
@@ -1412,6 +1528,96 @@
                     <tbody id="periodicTaskTableBody"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+
+    <!-- ==============================
+         コンディションシグナルセクション
+    ============================== -->
+    <div id="conditionSection" style="display:none">
+        <div class="main-container">
+
+            <!-- 2-1. Excel投入エリア -->
+            <div class="cs-upload-area">
+                <div class="cs-file-group">
+                    <label class="cs-file-label" for="csCurrentFile">当月 KOT Excel <span style="color:#e53e3e">*</span></label>
+                    <input type="file" id="csCurrentFile" class="cs-file-input" accept=".xls,.xlsx,.html,.htm">
+                </div>
+                <div class="cs-file-group">
+                    <label class="cs-file-label" for="csPrevFile">先月 KOT Excel <span style="color:#94a3b8">（任意・慢性判定用）</span></label>
+                    <input type="file" id="csPrevFile" class="cs-file-input" accept=".xls,.xlsx,.html,.htm">
+                </div>
+                <button class="cs-run-btn" id="csRunBtn" disabled>集計実行</button>
+            </div>
+
+            <!-- 2-2. サマリー行 -->
+            <div class="cs-summary-bar" id="csSummaryBar" style="display:none">
+                <div class="cs-stat">
+                    <div class="cs-stat-value" id="csAlertCount">0</div>
+                    <div class="cs-stat-label">警戒者数</div>
+                </div>
+                <div class="cs-stat">
+                    <div class="cs-stat-value" id="csWatchCount">0</div>
+                    <div class="cs-stat-label">要注意数</div>
+                </div>
+                <div class="cs-stat">
+                    <div class="cs-stat-value" id="csChronicCount">0</div>
+                    <div class="cs-stat-label">慢性判定数</div>
+                </div>
+                <div class="cs-stat">
+                    <div class="cs-stat-value" id="csSnapshotMonth" style="font-size:1rem">―</div>
+                    <div class="cs-stat-label">集計月</div>
+                </div>
+            </div>
+
+            <!-- テーブルエリア -->
+            <div id="csTableArea">
+                <div class="cs-empty-msg" id="csEmptyMsg">KOT Excelを投入してください</div>
+
+                <!-- 2-3. 警戒者テーブル -->
+                <div id="csAlertSection" style="display:none">
+                    <div class="cs-section-label">警戒者（欠勤3日以上）</div>
+                    <div class="cs-table-wrap">
+                        <table class="cs-table">
+                            <thead><tr>
+                                <th>氏名</th><th>所属</th><th>欠勤日数</th>
+                                <th>傾向</th><th>担当</th><th>メモ</th>
+                            </tr></thead>
+                            <tbody id="csAlertBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2-4. 要注意テーブル -->
+                <div id="csWatchSection" style="display:none">
+                    <div class="cs-section-label">要注意（欠勤2日）</div>
+                    <div class="cs-table-wrap">
+                        <table class="cs-table">
+                            <thead><tr>
+                                <th>氏名</th><th>所属</th><th>欠勤日数</th>
+                                <th>傾向</th><th>担当</th><th>メモ</th>
+                            </tr></thead>
+                            <tbody id="csWatchBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2-5. 過去の警戒者エリア -->
+                <div id="csPastSection" style="display:none">
+                    <div class="cs-section-label">以下は過去の警戒者</div>
+                    <div class="cs-table-wrap">
+                        <table class="cs-table">
+                            <thead><tr>
+                                <th>氏名</th><th>所属</th>
+                                <th>最終警戒月</th><th>ピーク欠勤日数</th>
+                            </tr></thead>
+                            <tbody id="csPastBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -3427,21 +3633,412 @@
         }
 
         // =========================================================
+        // コンディションシグナル
+        // =========================================================
+        const CS_KEY = 'granavi_conditionSignal';
+        const CS_MAX_SNAPSHOTS = 12;
+        const TREND_OPTIONS = ['慢性', '一時的', '増加傾向', '改善傾向', '再発', '要確認'];
+
+        // KOTファイル解析（独立関数 — ハンドラから呼ぶだけ）
+        function parseKOTData(rawText) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawText, 'text/html');
+
+            // h2タグから対象期間の開始日を取得して snapshotMonth を決定
+            // 例: "2026/04/01〜2026/04/30" → "2026-04"
+            let snapshotMonth = null;
+            const h2s = Array.from(doc.querySelectorAll('h2'));
+            for (const h2 of h2s) {
+                const text = h2.textContent.trim();
+                const m = text.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+                if (m) {
+                    snapshotMonth = `${m[1]}-${m[2].trim().padStart(2,'0')}`;
+                    break;
+                }
+            }
+            // h2が見つからない場合は実行日の前月にフォールバック
+            if (!snapshotMonth) {
+                const today = new Date();
+                const y = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+                const mo = today.getMonth() === 0 ? 12 : today.getMonth();
+                snapshotMonth = `${y}-${String(mo).padStart(2,'0')}`;
+            }
+
+            const rows = Array.from(doc.querySelectorAll('tr'));
+            const members = [];
+            // ヘッダ行から列インデックスを特定
+            let nameIdx = -1, deptIdx = -1, absenceIdx = -1;
+            for (const row of rows) {
+                const cells = Array.from(row.querySelectorAll('th, td'));
+                const texts = cells.map(c => c.textContent.trim());
+                // ヘッダ行を探す
+                if (nameIdx === -1) {
+                    const ni = texts.findIndex(t => t.includes('名前') || t.includes('氏名'));
+                    const di = texts.findIndex(t => t.includes('所属') || t.includes('部署'));
+                    const ai = texts.findIndex(t => t.includes('欠勤'));
+                    if (ni >= 0 && ai >= 0) {
+                        nameIdx = ni; deptIdx = di; absenceIdx = ai;
+                        continue;
+                    }
+                }
+                if (nameIdx === -1) continue;
+                // データ行
+                const cells2 = Array.from(row.querySelectorAll('td'));
+                if (cells2.length === 0) continue;
+                const rawName = (cells2[nameIdx] || {textContent:''}).textContent.trim();
+                if (!rawName) continue;
+                const parts = rawName.split(/\s+/);
+                const kotId = parts[0];
+                if (!/^\d+$/.test(kotId)) continue; // 集計行スキップ
+                const displayName = parts.slice(1).join(' ');
+                const dept = deptIdx >= 0 ? (cells2[deptIdx] || {textContent:''}).textContent.trim() : '';
+                const absRaw = (cells2[absenceIdx] || {textContent:'0'}).textContent.trim();
+                const absenceDays = parseFloat(absRaw) || 0;
+                members.push({ kotId, name: displayName, dept, absenceDays });
+            }
+            return { members, snapshotMonth };
+        }
+
+        // スナップショット読み込み
+        function loadCsSnapshots() {
+            try {
+                return JSON.parse(localStorage.getItem(CS_KEY) || '[]');
+            } catch(e) { return []; }
+        }
+
+        // スナップショット保存
+        function saveCsSnapshots(snapshots) {
+            localStorage.setItem(CS_KEY, JSON.stringify(snapshots));
+        }
+
+
+
+        // 慢性判定・傾向自動割り当て
+        function computeChronicAndTrend(currentMembers, prevMembers) {
+            const prevMap = {};
+            (prevMembers || []).forEach(m => { prevMap[m.kotId] = m; });
+
+            return currentMembers.map(m => {
+                const prev = prevMap[m.kotId];
+                const isAlert = m.absenceDays >= 3;
+                const isWatch = m.absenceDays === 2;
+                const prevAlert = prev ? prev.isAlert : false;
+                const chronicFlag = isAlert && prevAlert;
+
+                // 傾向自動割り当て
+                let absenceTrend = '要確認';
+                if (chronicFlag) {
+                    absenceTrend = '慢性';
+                } else if (isAlert && !prevAlert) {
+                    absenceTrend = '増加傾向';
+                } else if (!isAlert && prevAlert) {
+                    absenceTrend = '改善傾向';
+                }
+                // 再発判定（前々月データがあれば）は既存スナップショットで後から補完
+
+                const warningStatus = isAlert ? 'active' : isWatch ? 'active' : 'none';
+                return {
+                    ...m,
+                    isAlert,
+                    isWatch,
+                    chronicFlag,
+                    absenceTrend,
+                    manualOverride: false,
+                    warningStatus,
+                    assignee: '',
+                    memo: ''
+                };
+            });
+        }
+
+        // 再発判定を既存スナップショット履歴で補完
+        function applyRelapseDetection(members, snapshots, currentMonthIdx) {
+            // currentMonthIdx: 新スナップショット挿入後のインデックス
+            return members.map(m => {
+                if (m.manualOverride) return m;
+                if (m.absenceTrend !== '要確認') return m;
+                // 2ヶ月前にisAlert、1ヶ月前にisAlert=falseなら再発
+                const prev1 = snapshots[currentMonthIdx - 1];
+                const prev2 = snapshots[currentMonthIdx - 2];
+                if (!prev1 || !prev2) return m;
+                const p1 = (prev1.members || []).find(x => x.kotId === m.kotId);
+                const p2 = (prev2.members || []).find(x => x.kotId === m.kotId);
+                if (p2 && p2.isAlert && p1 && !p1.isAlert && m.isAlert) {
+                    return { ...m, absenceTrend: '再発' };
+                }
+                return m;
+            });
+        }
+
+        // 当月ファイル変更ハンドラ
+        function onCsCurrentFileChange() {
+            const hasFile = !!document.getElementById('csCurrentFile').files[0];
+            document.getElementById('csRunBtn').disabled = !hasFile;
+        }
+
+        // 集計実行ハンドラ
+        async function onCsRunClick() {
+            const currentFile = document.getElementById('csCurrentFile').files[0];
+            if (!currentFile) return;
+
+            const currentRaw = await currentFile.text();
+            const { members: currentParsed, snapshotMonth } = parseKOTData(currentRaw);
+            if (currentParsed.length === 0) {
+                alert('当月ファイルからメンバーデータを取得できませんでした。\nKOT形式のHTMLファイルか確認してください。');
+                return;
+            }
+
+            // 先月ファイル（任意）
+            let prevParsed = [];
+            const prevFile = document.getElementById('csPrevFile').files[0];
+            if (prevFile) {
+                const prevRaw = await prevFile.text();
+                prevParsed = parseKOTData(prevRaw).members;
+            }
+            const importedAt = new Date().toISOString().slice(0, 10);
+
+            // 慢性・傾向計算
+            let members = computeChronicAndTrend(currentParsed, prevParsed.length > 0 ? prevParsed.map(m => ({
+                ...m,
+                isAlert: m.absenceDays >= 3,
+                isWatch: m.absenceDays === 2
+            })) : []);
+
+            // スナップショット管理
+            let snapshots = loadCsSnapshots();
+            const existingIdx = snapshots.findIndex(s => s.snapshotMonth === snapshotMonth);
+
+            if (existingIdx >= 0) {
+                if (!confirm(`${snapshotMonth} のデータは既にあります。上書きしますか？`)) return;
+                // 既存の manualOverride 状態を引き継ぐ
+                const existingMembers = snapshots[existingIdx].members || [];
+                members = members.map(m => {
+                    const ex = existingMembers.find(e => e.kotId === m.kotId);
+                    if (ex && ex.manualOverride) {
+                        return { ...m, absenceTrend: ex.absenceTrend, manualOverride: true, assignee: ex.assignee, memo: ex.memo };
+                    }
+                    return m;
+                });
+                snapshots[existingIdx] = { snapshotMonth, importedAt, members };
+            } else {
+                snapshots.push({ snapshotMonth, importedAt, members });
+                // 上限超過時は最古を削除
+                if (snapshots.length > CS_MAX_SNAPSHOTS) {
+                    snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
+                    snapshots = snapshots.slice(snapshots.length - CS_MAX_SNAPSHOTS);
+                }
+            }
+
+            // 再発判定補完
+            snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
+            const newIdx = snapshots.findIndex(s => s.snapshotMonth === snapshotMonth);
+            snapshots[newIdx].members = applyRelapseDetection(snapshots[newIdx].members, snapshots, newIdx);
+
+            saveCsSnapshots(snapshots);
+            renderConditionSignal();
+        }
+
+        // コンディションシグナル描画
+        function renderConditionSignal() {
+            const snapshots = loadCsSnapshots();
+            snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
+            const latest = snapshots[snapshots.length - 1];
+
+            const emptyMsg      = document.getElementById('csEmptyMsg');
+            const summaryBar    = document.getElementById('csSummaryBar');
+            const alertSection  = document.getElementById('csAlertSection');
+            const watchSection  = document.getElementById('csWatchSection');
+            const pastSection   = document.getElementById('csPastSection');
+
+            if (!latest) {
+                emptyMsg.style.display     = '';
+                summaryBar.style.display   = 'none';
+                alertSection.style.display = 'none';
+                watchSection.style.display = 'none';
+                pastSection.style.display  = 'none';
+                return;
+            }
+
+            emptyMsg.style.display = 'none';
+
+            const members = latest.members || [];
+            const alertMembers   = members.filter(m => m.isAlert);
+            const watchMembers   = members.filter(m => m.isWatch);
+            const chronicCount   = members.filter(m => m.chronicFlag).length;
+
+            // サマリー更新
+            summaryBar.style.display = '';
+            document.getElementById('csAlertCount').textContent    = alertMembers.length;
+            document.getElementById('csWatchCount').textContent    = watchMembers.length;
+            document.getElementById('csChronicCount').textContent  = chronicCount;
+            document.getElementById('csSnapshotMonth').textContent = latest.snapshotMonth;
+
+            // 警戒者テーブル
+            if (alertMembers.length > 0) {
+                alertSection.style.display = '';
+                renderCsTable('csAlertBody', alertMembers, 'cs-row-alert', latest.snapshotMonth);
+            } else {
+                alertSection.style.display = 'none';
+            }
+
+            // 要注意テーブル
+            if (watchMembers.length > 0) {
+                watchSection.style.display = '';
+                renderCsTable('csWatchBody', watchMembers, 'cs-row-watch', latest.snapshotMonth);
+            } else {
+                watchSection.style.display = 'none';
+            }
+
+            // 過去の警戒者
+            const pastMembers = buildPastAlertMembers(snapshots);
+            if (pastMembers.length > 0) {
+                pastSection.style.display = '';
+                renderCsPastTable('csPastBody', pastMembers);
+            } else {
+                pastSection.style.display = 'none';
+            }
+        }
+
+        // 警戒者・要注意テーブル行描画
+        function renderCsTable(tbodyId, memberList, rowClass, snapshotMonth) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            memberList.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+
+                // 傾向select
+                const trendSel = document.createElement('select');
+                trendSel.className = 'cs-trend-select';
+                TREND_OPTIONS.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt; o.textContent = opt;
+                    if (opt === m.absenceTrend) o.selected = true;
+                    trendSel.appendChild(o);
+                });
+                trendSel.addEventListener('change', () => {
+                    updateCsMemberField(snapshotMonth, m.kotId, 'absenceTrend', trendSel.value);
+                    updateCsMemberField(snapshotMonth, m.kotId, 'manualOverride', true);
+                });
+
+                // 担当input
+                const assigneeInput = document.createElement('input');
+                assigneeInput.type = 'text';
+                assigneeInput.className = 'cs-text-input';
+                assigneeInput.value = m.assignee || '';
+                assigneeInput.addEventListener('change', () => {
+                    updateCsMemberField(snapshotMonth, m.kotId, 'assignee', assigneeInput.value);
+                });
+
+                // メモinput
+                const memoInput = document.createElement('input');
+                memoInput.type = 'text';
+                memoInput.className = 'cs-text-input';
+                memoInput.value = m.memo || '';
+                memoInput.addEventListener('change', () => {
+                    updateCsMemberField(snapshotMonth, m.kotId, 'memo', memoInput.value);
+                });
+
+                const td = (content) => {
+                    const t = document.createElement('td');
+                    if (typeof content === 'string') t.textContent = content;
+                    else t.appendChild(content);
+                    return t;
+                };
+
+                tr.appendChild(td(m.name));
+                tr.appendChild(td(m.dept));
+                tr.appendChild(td(String(m.absenceDays)));
+                tr.appendChild(td(trendSel));
+                tr.appendChild(td(assigneeInput));
+                tr.appendChild(td(memoInput));
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 過去の警戒者テーブル行描画
+        function renderCsPastTable(tbodyId, pastList) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            pastList.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = 'cs-row-past';
+                [p.name, p.dept, p.lastAlertMonth, String(p.peakAbsenceDays)].forEach(val => {
+                    const td = document.createElement('td');
+                    td.textContent = val;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // メンバーフィールドの更新（即時localStorage保存）
+        function updateCsMemberField(snapshotMonth, kotId, field, value) {
+            const snapshots = loadCsSnapshots();
+            const snap = snapshots.find(s => s.snapshotMonth === snapshotMonth);
+            if (!snap) return;
+            const member = (snap.members || []).find(m => m.kotId === kotId);
+            if (!member) return;
+            member[field] = value;
+            saveCsSnapshots(snapshots);
+        }
+
+        // 過去の警戒者リスト構築
+        // 直近スナップショットでabsenceDays<2、過去12件中にisAlert:trueが1件以上
+        function buildPastAlertMembers(snapshots) {
+            if (snapshots.length === 0) return [];
+            const latest = snapshots[snapshots.length - 1];
+            const latestMembers = latest.members || [];
+            const latestActiveIds = new Set(
+                latestMembers.filter(m => m.isAlert || m.isWatch).map(m => m.kotId)
+            );
+            const allPast = snapshots.slice(0, -1); // 直近以外
+
+            // kotId別に過去情報を集計
+            const pastMap = {};
+            allPast.forEach(snap => {
+                (snap.members || []).forEach(m => {
+                    if (!m.isAlert) return;
+                    if (!pastMap[m.kotId]) {
+                        pastMap[m.kotId] = { name: m.name, dept: m.dept, lastAlertMonth: snap.snapshotMonth, peakAbsenceDays: m.absenceDays };
+                    } else {
+                        if (snap.snapshotMonth > pastMap[m.kotId].lastAlertMonth) {
+                            pastMap[m.kotId].lastAlertMonth = snap.snapshotMonth;
+                        }
+                        if (m.absenceDays > pastMap[m.kotId].peakAbsenceDays) {
+                            pastMap[m.kotId].peakAbsenceDays = m.absenceDays;
+                        }
+                    }
+                });
+            });
+
+            // 直近スナップショットでabsenceDays<2（警戒・要注意でない）かつ過去に警戒あり
+            return Object.entries(pastMap)
+                .filter(([kotId]) => !latestActiveIds.has(kotId))
+                .map(([, v]) => v)
+                .sort((a, b) => b.lastAlertMonth.localeCompare(a.lastAlertMonth));
+        }
+
+        // =========================================================
         // タブ切り替え
         // =========================================================
         function switchTab(tab) {
-            const isMonthly = (tab === 'monthly');
-            const isPeriodic = (tab === 'periodic');
-            document.getElementById('kadouSection').style.display   = (!isMonthly && !isPeriodic) ? '' : 'none';
-            document.getElementById('monthlySection').style.display = isMonthly ? '' : 'none';
-            document.getElementById('periodicSection').style.display = isPeriodic ? '' : 'none';
-            document.getElementById('addMemberBtn').style.display   = (isMonthly || isPeriodic) ? 'none' : '';
-            document.getElementById('teamExportBtn').style.display  = (isMonthly || isPeriodic) ? 'none' : '';
-            document.getElementById('teamFilter').style.display     = (isMonthly || isPeriodic) ? 'none' : '';
-            document.getElementById('kadouFocusFilter').style.display = (isMonthly || isPeriodic) ? 'none' : '';
-            document.getElementById('tabKadou').classList.toggle('active',   !isMonthly && !isPeriodic);
-            document.getElementById('tabMonthly').classList.toggle('active',  isMonthly);
-            document.getElementById('tabPeriodic').classList.toggle('active', isPeriodic);
+            const isMonthly   = (tab === 'monthly');
+            const isPeriodic  = (tab === 'periodic');
+            const isCondition = (tab === 'condition');
+            const isKadou     = !isMonthly && !isPeriodic && !isCondition;
+            document.getElementById('kadouSection').style.display     = isKadou     ? '' : 'none';
+            document.getElementById('monthlySection').style.display   = isMonthly   ? '' : 'none';
+            document.getElementById('periodicSection').style.display  = isPeriodic  ? '' : 'none';
+            document.getElementById('conditionSection').style.display = isCondition ? '' : 'none';
+            document.getElementById('addMemberBtn').style.display     = isKadou ? '' : 'none';
+            document.getElementById('teamExportBtn').style.display    = isKadou ? '' : 'none';
+            document.getElementById('teamFilter').style.display       = isKadou ? '' : 'none';
+            document.getElementById('kadouFocusFilter').style.display = isKadou ? '' : 'none';
+            document.getElementById('tabKadou').classList.toggle('active',     isKadou);
+            document.getElementById('tabMonthly').classList.toggle('active',   isMonthly);
+            document.getElementById('tabPeriodic').classList.toggle('active',  isPeriodic);
+            document.getElementById('tabCondition').classList.toggle('active', isCondition);
 
             if (isMonthly) {
                 currentYearMonth = getCurrentYearMonth();
@@ -3450,9 +4047,11 @@
                 updateMonthDisplay();
                 renderMonthlyTable();
             }
-
             if (isPeriodic) {
                 renderPeriodicTaskTable();
+            }
+            if (isCondition) {
+                renderConditionSignal();
             }
         }
 
@@ -4000,9 +4599,13 @@
         // =========================================================
         function setupEventListeners() {
             // タブ
-            document.getElementById('tabKadou').addEventListener('click',   () => switchTab('kadou'));
-            document.getElementById('tabMonthly').addEventListener('click', () => switchTab('monthly'));
-            document.getElementById('tabPeriodic').addEventListener('click', () => switchTab('periodic'));
+            document.getElementById('tabKadou').addEventListener('click',     () => switchTab('kadou'));
+            document.getElementById('tabMonthly').addEventListener('click',   () => switchTab('monthly'));
+            document.getElementById('tabPeriodic').addEventListener('click',  () => switchTab('periodic'));
+            document.getElementById('tabCondition').addEventListener('click', () => switchTab('condition'));
+            // コンディションシグナル
+            document.getElementById('csCurrentFile').addEventListener('change', onCsCurrentFileChange);
+            document.getElementById('csRunBtn').addEventListener('click', onCsRunClick);
 
             // 稼働一覧（既存）
             document.getElementById('addMemberBtn').addEventListener('click', openAddModal);
