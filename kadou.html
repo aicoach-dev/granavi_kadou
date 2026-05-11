@@ -1529,6 +1529,7 @@
         .cs-detail-table tbody tr:last-child td { border-bottom: none; }
         .cs-detail-sick  { color: #dc2626; font-weight: 600; }
         .cs-detail-check { color: #64748b; }
+        .cs-sick-badge { font-size: 0.75rem; margin-left: 0.5rem; }
         .cs-detail-empty {
             padding: 0.75rem 0.625rem;
             color: #94a3b8;
@@ -1794,7 +1795,7 @@
                         <table class="cs-table">
                             <thead><tr>
                                 <th>氏名</th><th>所属</th><th>欠勤＋有休日数</th>
-                                <th>傾向</th><th>担当</th><th>メモ</th>
+                                <th>傾向</th><th>担当</th><th>メモ</th><th>詳細</th>
                             </tr></thead>
                             <tbody id="csWatchBody"></tbody>
                         </table>
@@ -3897,7 +3898,7 @@
          * @returns {Promise<{members: Array, snapshotMonth: string, periodStart: string}>}
          */
         async function fetchKOTFromAPI(yearMonth, token) {
-            const url = KOT_PROXY_BASE + '/monthly-workings/' + yearMonth;
+            const url = KOT_PROXY_BASE + '/monthly-workings/' + yearMonth + '?additionalFields=currentDateEmployee';
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -3912,18 +3913,25 @@
             // レスポンスを parseKOTData 互換の member 配列に変換
             const records = Array.isArray(data) ? data : (data.employees || data.records || []);
             const members = records.map(function(emp) {
-                const code = String(
-                    (emp.employee && (emp.employee.employeeCode || emp.employee.code)) ||
-                    emp.employeeCode || emp.code || ''
-                );
-                const name = (emp.employee && emp.employee.name) || emp.name || '';
-                const dept = (emp.employee && emp.employee.division) || emp.division || emp.department || '';
-                const absence = parseFloat(emp.absenceDays || emp.absentDays || 0) || 0;
-                const paidLeave = parseFloat(emp.paidLeaveDays || emp.annualHolidayDays || 0) || 0;
+                const code = String(emp.currentEmployee && emp.currentEmployee.code || '').trim();
+                const lastName  = (emp.currentEmployee && emp.currentEmployee.lastName)  || '';
+                const firstName = (emp.currentEmployee && emp.currentEmployee.firstName) || '';
+                const name = [lastName, firstName].filter(Boolean).join(' ');
+                const dept = ((emp.currentEmployee && emp.currentEmployee.divisionCode) || '') + ' '
+                           + ((emp.currentEmployee && emp.currentEmployee.divisionName) || '');
+                // 欠勤日数
+                const absence = parseFloat(emp.absentdayCount || 0) || 0;
+                // 有休日数: holidaysObtained が配列の場合は dayCount を合算
+                let paidLeave = 0;
+                if (Array.isArray(emp.holidaysObtained)) {
+                    emp.holidaysObtained.forEach(function(h) {
+                        paidLeave += parseFloat(h.dayCount || 0) || 0;
+                    });
+                }
                 return {
                     kotId: code,
                     name: name,
-                    dept: dept,
+                    dept: dept.trim(),
                     absenceDays: absence + paidLeave
                 };
             }).filter(function(m) { return /^\d+$/.test(m.kotId); });
@@ -4049,7 +4057,7 @@
                 // processCsData を1回だけ呼ぶ
                 processCsData(currentResult, prevResult);
 
-                statusEl.textContent = '取得完了（' + currentYM + '）';
+                statusEl.textContent = '取得・集計完了（' + currentYM + '）';
                 statusEl.className = 'cs-api-status ok';
             } catch(err) {
                 statusEl.textContent = 'エラー: ' + err.message;
@@ -4078,6 +4086,10 @@
         // 展開中の詳細行を管理するマップ（kotId → true/false）
         // localStorage には保存しない
         const csDetailOpenRows = {};
+
+        // 詳細バッジテキストを保持するマップ（kotId → string）
+        // localStorage には保存しない
+        const csDetailBadges = {};
 
         /**
          * KOT WebAPI から指定メンバーの過去60日の有休データを取得する。
@@ -4233,7 +4245,7 @@
             const detailRowId = 'cs-detail-row-' + kotId;
             const existingRow = document.getElementById(detailRowId);
 
-            // 既に展開中なら折りたたむ
+            // 既に展開中なら折りたたむ（バッジは残す）
             if (existingRow) {
                 existingRow.remove();
                 csDetailOpenRows[kotId] = false;
@@ -4314,6 +4326,17 @@
 
                 btn.textContent = '閉じる';
                 btn.disabled = false;
+
+                // バッジをボタン横に表示（既存バッジは上書き）
+                const badgeText = (sickCount > 0 ? '🔴' : '⚪') + ' ' + sickCount + ' / ' + totalLeaveCount;
+                csDetailBadges[kotId] = badgeText;
+                let badge = btn.parentNode.querySelector('.cs-sick-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'cs-sick-badge';
+                    btn.parentNode.appendChild(badge);
+                }
+                badge.textContent = badgeText;
 
             } catch (err) {
                 csDetailOpenRows[kotId] = false;
@@ -4613,8 +4636,6 @@
         function renderCsTable(tbodyId, memberList, rowClass, snapshotMonth) {
             const tbody = document.getElementById(tbodyId);
             tbody.innerHTML = '';
-            const isAlertTable = (tbodyId === 'csAlertBody');
-
             memberList.forEach(m => {
                 const tr = document.createElement('tr');
                 tr.className = rowClass;
@@ -4665,8 +4686,9 @@
                 tr.appendChild(td(assigneeInput));
                 tr.appendChild(td(memoInput));
 
-                // 警戒者テーブルのみ詳細ボタンを追加
-                if (isAlertTable) {
+                // 詳細ボタンを追加（警戒者・要注意両テーブル共通）
+                {
+                    const detailCell = document.createElement('td');
                     const detailBtn = document.createElement('button');
                     detailBtn.type = 'button';
                     detailBtn.className = 'cs-detail-btn';
@@ -4674,7 +4696,15 @@
                     detailBtn.addEventListener('click', function() {
                         toggleDetailRow(m.kotId, m.name, detailBtn, tr);
                     });
-                    tr.appendChild(td(detailBtn));
+                    detailCell.appendChild(detailBtn);
+                    // 既にバッジが保存されていれば復元
+                    if (csDetailBadges[m.kotId]) {
+                        const badge = document.createElement('span');
+                        badge.className = 'cs-sick-badge';
+                        badge.textContent = csDetailBadges[m.kotId];
+                        detailCell.appendChild(badge);
+                    }
+                    tr.appendChild(detailCell);
                 }
 
                 tbody.appendChild(tr);
