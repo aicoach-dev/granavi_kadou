@@ -97,3 +97,85 @@
 - Do not over-automate.
 - Leave final judgment to people.
 - Do not turn it into a notification platform.
+
+## Condition Signal (コンディションシグナル)
+
+### Purpose
+Early detection of follow-up needs based on absence patterns.
+This is NOT attendance monitoring. It is follow-up support only.
+
+### Tab
+Add as the 4th tab: "コンディションシグナル"
+Do not modify existing tabs (稼働一覧, 月次実績, 定期タスク確認).
+
+### KOT File Parsing
+- KOT export files (.xls) are actually HTML, not binary Excel.
+- Parse using DOMParser in the browser. No library needed.
+- Required columns: 名前, 所属, 欠勤日数
+- Name field format in KOT: "00201 豊田 淳" → split on space, [0]=kotId, [1+]=displayName
+- Skip rows where kotId does not match /^\d+$/ (skip totals row)
+
+### Thresholds (fixed, not configurable)
+- Alert (警戒): absenceDays >= 3
+- Watch (要注意): absenceDays == 2
+- Display cutoff: absenceDays >= 2 (absenceDays < 2 → not shown)
+
+### Chronic detection
+- Chronic (慢性): current month isAlert === true AND previous month isAlert === true
+- Requires 2 snapshots to evaluate. If only 1 snapshot exists, chronicFlag = false.
+
+### Trend values (dropdown, 6 options)
+慢性 / 一時的 / 増加傾向 / 改善傾向 / 再発 / 要確認
+- Auto-assign on import. Human can override via dropdown.
+- Once manually changed (manualOverride: true), auto-assign does not overwrite.
+
+### Auto trend assignment logic
+- chronicFlag true → 慢性
+- isAlert true, previous month false → 増加傾向
+- isAlert false, previous month true → 改善傾向
+- isAlert true, 2 months ago true but previous month false → 再発
+- otherwise → 要確認
+
+### localStorage
+- Key: granavi_conditionSignal
+- Structure: array of monthly snapshots
+  { snapshotMonth: "2026-04", importedAt: "2026-05-11", members: [...] }
+- Append new snapshot on each import. Do not overwrite existing snapshots.
+- Max snapshots to retain: 12 (drop oldest when exceeded)
+
+### Member record per snapshot
+{
+  kotId: string,         // "00201"
+  name: string,          // "豊田 淳"
+  dept: string,          // "技術部（AD）"
+  absenceDays: number,
+  isAlert: boolean,      // absenceDays >= 3
+  isWatch: boolean,      // absenceDays == 2
+  chronicFlag: boolean,
+  absenceTrend: string,  // auto-assigned, human-overridable
+  manualOverride: boolean,
+  warningStatus: string, // "active" | "past" | "none"
+  assignee: string,      // manual input, default ""
+  memo: string           // manual input, default ""
+}
+
+### Prohibited
+- Do not fetch KOT automatically. File upload only (two <input type="file">).
+- Do not show absenceDays < 2 in the list.
+- Do not implement medical or HR judgment language.
+- Do not label the feature as 勤怠監視 or 欠勤管理.
+- Do not add charts or graphs in MVP.
+- Do not connect to existing reminder (mailto) flow.
+- Do not save send history.
+- Do not add per-member notes beyond the memo field.
+- assignee field is free text only. Do not link to existing member records.
+
+### Destructive operations
+- Re-importing the same month overwrites that snapshot only. Confirm dialog required.
+- Do not add a bulk delete feature.
+
+### Architecture note
+Keep KOT parsing logic in a separate function (e.g. parseKOTData(rawText))
+that accepts raw HTML string and returns a member array.
+The file upload handler and future API handler both call this same function.
+Do not mix parsing logic into the upload event handler directly.
