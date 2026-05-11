@@ -203,3 +203,9 @@ Do not mix parsing logic into the upload event handler directly.
 - 画面に以下の注記を常時表示すること:
   「※集計精度はKOTの日次入力が前提です。毎週月曜朝に実行してください。」
 - この注記は投入エリアの直下に小さく表示する。
+
+### File Order Validation
+- 集計実行時、当月ファイルの snapshotMonth が先月ファイルの snapshotMonth 以前の場合、
+  「当月・先月のファイルが逆の可能性があります」という警告を表示する。
+- 警告はキャンセルしない。ユーザーが確認した上で続行できる。
+- 先月ファイルが未選択の場合はチェックしない。
