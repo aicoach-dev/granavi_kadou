@@ -1407,6 +1407,133 @@
             color: #94a3b8;
             font-size: 0.875rem;
         }
+
+
+        /* ── KOT API トークン入力エリア ── */
+        .cs-api-area {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            margin-bottom: 0.875rem;
+        }
+        .cs-api-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            flex: 1 1 260px;
+        }
+        .cs-api-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .cs-api-input {
+            padding: 0.45rem 0.65rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: #1e293b;
+            background: white;
+            min-width: 240px;
+        }
+        .cs-api-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+        .cs-api-status {
+            font-size: 0.8125rem;
+            color: #64748b;
+            min-height: 1.2em;
+            margin-top: 0.25rem;
+        }
+        .cs-api-status.ok    { color: #16a34a; font-weight: 600; }
+        .cs-api-status.error { color: #dc2626; font-weight: 600; }
+        .cs-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: #94a3b8;
+            font-size: 0.8125rem;
+        }
+        .cs-divider::before,
+        .cs-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        /* ── コンディション詳細（Condition Signal Detail） ── */
+        .cs-detail-btn {
+            padding: 0.25rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #93c5fd;
+            border-radius: 0.25rem;
+            background: #eff6ff;
+            color: #1d4ed8;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .cs-detail-btn:hover:not(:disabled) { background: #dbeafe; }
+        .cs-detail-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .cs-detail-row td {
+            background: #f8fafc;
+            padding: 0.75rem 1rem;
+            font-size: 0.8125rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .cs-detail-header {
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .cs-detail-error {
+            color: #dc2626;
+            font-size: 0.8125rem;
+            margin-top: 0.25rem;
+        }
+        .cs-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+            font-size: 0.8125rem;
+            background: white;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .cs-detail-table th {
+            padding: 0.375rem 0.625rem;
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .cs-detail-table td {
+            padding: 0.35rem 0.625rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .cs-detail-table tbody tr:last-child td { border-bottom: none; }
+        .cs-detail-sick  { color: #dc2626; font-weight: 600; }
+        .cs-detail-check { color: #64748b; }
+        .cs-detail-empty {
+            padding: 0.75rem 0.625rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -1573,6 +1700,19 @@
     <div id="conditionSection" style="display:none">
         <div class="main-container">
 
+            <!-- KOT APIトークン入力エリア -->
+            <div class="cs-api-area">
+                <div class="cs-api-group">
+                    <label class="cs-api-label" for="csApiToken">KOT アクセストークン</label>
+                    <input type="password" id="csApiToken" class="cs-api-input" placeholder="Bearer トークンを入力">
+                    <div class="cs-api-status" id="csApiStatus"></div>
+                </div>
+                <button class="cs-run-btn" id="csApiRunBtn">API取得</button>
+            </div>
+
+            <!-- 区切り線 -->
+            <div class="cs-divider">または ファイルから投入</div>
+
             <!-- 2-1. Excel投入エリア -->
             <div class="cs-upload-area">
                 <div class="cs-file-group">
@@ -1640,7 +1780,7 @@
                         <table class="cs-table">
                             <thead><tr>
                                 <th>氏名</th><th>所属</th><th>欠勤＋有休日数</th>
-                                <th>傾向</th><th>担当</th><th>メモ</th>
+                                <th>傾向</th><th>担当</th><th>メモ</th><th>詳細</th>
                             </tr></thead>
                             <tbody id="csAlertBody"></tbody>
                         </table>
@@ -3730,6 +3870,398 @@
         }
 
 
+
+        // =========================================================
+        // KOT API トークン管理・API取得
+        // =========================================================
+        function loadKotApiToken() {
+            try { return localStorage.getItem(KOT_API_TOKEN_KEY) || ''; } catch(e) { return ''; }
+        }
+
+        function saveKotApiToken(token) {
+            try { localStorage.setItem(KOT_API_TOKEN_KEY, token); } catch(e) {}
+        }
+
+        function initCsApiTokenUI() {
+            const input = document.getElementById('csApiToken');
+            if (input) input.value = loadKotApiToken();
+            const status = document.getElementById('csApiStatus');
+            if (status) { status.textContent = ''; status.className = 'cs-api-status'; }
+        }
+
+        /**
+         * GET https://api.kingtime.jp/v1.0/monthly-workings/YYYY-MM
+         * 月次勤怠サマリを取得し parseKOTData 互換の形式で返す。
+         * @param {string} yearMonth - "YYYY-MM"
+         * @param {string} token
+         * @returns {Promise<{members: Array, snapshotMonth: string, periodStart: string}>}
+         */
+        async function fetchKOTFromAPI(yearMonth, token) {
+            const url = KOT_PROXY_BASE + '/monthly-workings/' + yearMonth;
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!res.ok) {
+                throw new Error('APIエラー: ' + res.status + ' ' + res.statusText + '（' + yearMonth + '）');
+            }
+            const data = await res.json();
+            // レスポンスを parseKOTData 互換の member 配列に変換
+            const records = Array.isArray(data) ? data : (data.employees || data.records || []);
+            const members = records.map(function(emp) {
+                const code = String(
+                    (emp.employee && (emp.employee.employeeCode || emp.employee.code)) ||
+                    emp.employeeCode || emp.code || ''
+                );
+                const name = (emp.employee && emp.employee.name) || emp.name || '';
+                const dept = (emp.employee && emp.employee.division) || emp.division || emp.department || '';
+                const absence = parseFloat(emp.absenceDays || emp.absentDays || 0) || 0;
+                const paidLeave = parseFloat(emp.paidLeaveDays || emp.annualHolidayDays || 0) || 0;
+                return {
+                    kotId: code,
+                    name: name,
+                    dept: dept,
+                    absenceDays: absence + paidLeave
+                };
+            }).filter(function(m) { return /^\d+$/.test(m.kotId); });
+
+            // periodStart: YYYY-MM → YYYY/MM/01 形式
+            const parts = yearMonth.split('-');
+            const periodStart = parts[0] + '/' + parts[1] + '/01';
+
+            return { members: members, snapshotMonth: yearMonth, periodStart: periodStart };
+        }
+
+        /**
+         * fetchKOTFromAPI の結果を onCsRunClick と同じ処理フローに渡す共通関数。
+         * @param {Object} currentResult - { members, snapshotMonth, periodStart }
+         * @param {Object|null} prevResult
+         */
+        function processCsData(currentResult, prevResult) {
+            const currentParsed = currentResult.members;
+            const snapshotMonth = currentResult.snapshotMonth;
+            const currentPeriodStart = currentResult.periodStart;
+
+            if (currentParsed.length === 0) {
+                alert('データを取得できませんでした。トークンや対象月を確認してください。');
+                return;
+            }
+
+            const prevParsed = prevResult ? prevResult.members : [];
+            const prevPeriodStart = prevResult ? prevResult.periodStart : '';
+            const importedAt = new Date().toISOString().slice(0, 10);
+
+            const { alertThreshold: at, watchThreshold: wt } = loadCsThresholds();
+            let membersData = computeChronicAndTrend(currentParsed, prevParsed.length > 0 ? prevParsed.map(function(m) {
+                return { ...m, isAlert: m.absenceDays >= at, isWatch: m.absenceDays >= wt && m.absenceDays < at };
+            }) : []);
+
+            let snapshots = loadCsSnapshots();
+            const existingIdx = snapshots.findIndex(function(s) { return s.snapshotMonth === snapshotMonth; });
+
+            if (existingIdx >= 0) {
+                if (!confirm(snapshotMonth + ' のデータは既にあります。上書きしますか？')) return;
+                const existingMembers = snapshots[existingIdx].members || [];
+                membersData = membersData.map(function(m) {
+                    const ex = existingMembers.find(function(e) { return e.kotId === m.kotId; });
+                    if (ex && ex.manualOverride) {
+                        return { ...m, absenceTrend: ex.absenceTrend, manualOverride: true, assignee: ex.assignee, memo: ex.memo };
+                    }
+                    return m;
+                });
+                snapshots[existingIdx] = { snapshotMonth: snapshotMonth, importedAt: importedAt, periodStart: currentPeriodStart, prevPeriodStart: prevPeriodStart, members: membersData };
+            } else {
+                snapshots.push({ snapshotMonth: snapshotMonth, importedAt: importedAt, periodStart: currentPeriodStart, prevPeriodStart: prevPeriodStart, members: membersData });
+                if (snapshots.length > CS_MAX_SNAPSHOTS) {
+                    snapshots.sort(function(a, b) { return a.snapshotMonth.localeCompare(b.snapshotMonth); });
+                    snapshots = snapshots.slice(snapshots.length - CS_MAX_SNAPSHOTS);
+                }
+            }
+
+            snapshots.sort(function(a, b) { return a.snapshotMonth.localeCompare(b.snapshotMonth); });
+            const newIdx = snapshots.findIndex(function(s) { return s.snapshotMonth === snapshotMonth; });
+            snapshots[newIdx].members = applyRelapseDetection(snapshots[newIdx].members, snapshots, newIdx);
+
+            saveCsSnapshots(snapshots);
+            renderConditionSignal();
+        }
+
+        /**
+         * API取得ボタンのハンドラ。
+         * 当月（今月）と前月を自動計算して fetchKOTFromAPI → processCsData に渡す。
+         */
+        async function onCsApiRunClick() {
+            const tokenInput = document.getElementById('csApiToken');
+            const statusEl   = document.getElementById('csApiStatus');
+            const btn        = document.getElementById('csApiRunBtn');
+            const token = (tokenInput ? tokenInput.value.trim() : '') || loadKotApiToken();
+
+            if (!token) {
+                statusEl.textContent = 'トークンを入力してください';
+                statusEl.className = 'cs-api-status error';
+                return;
+            }
+
+            // トークンを保存
+            saveKotApiToken(token);
+
+            // 当月・前月を計算
+            const now = new Date();
+            const currentYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevYM = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+
+            btn.disabled = true;
+            btn.textContent = '取得中…';
+            statusEl.textContent = '当月データを取得中…';
+            statusEl.className = 'cs-api-status';
+
+            try {
+                const currentResult = await fetchKOTFromAPI(currentYM, token);
+
+                statusEl.textContent = '前月データを取得中…';
+                let prevResult = null;
+                try {
+                    prevResult = await fetchKOTFromAPI(prevYM, token);
+                } catch(e) {
+                    // 前月取得失敗は警告のみ（慢性判定なしで続行）
+                    console.warn('前月データ取得失敗（慢性判定なし）:', e.message);
+                }
+
+                // 当月＋前月の absenceDays を合算して1スナップショットにまとめる
+                if (prevResult && prevResult.members.length > 0) {
+                    const prevMap = {};
+                    prevResult.members.forEach(function(m) { prevMap[m.kotId] = m; });
+                    currentResult.members = currentResult.members.map(function(m) {
+                        const prev = prevMap[m.kotId];
+                        return prev
+                            ? { ...m, absenceDays: m.absenceDays + prev.absenceDays }
+                            : m;
+                    });
+                    // prevPeriodStart を currentResult に引き継ぐ（期間ラベル表示用）
+                    currentResult.prevPeriodStart = prevResult.periodStart;
+                }
+
+                statusEl.textContent = '集計中…';
+                // processCsData を1回だけ呼ぶ
+                processCsData(currentResult, prevResult);
+
+                statusEl.textContent = '取得完了（' + currentYM + '）';
+                statusEl.className = 'cs-api-status ok';
+            } catch(err) {
+                statusEl.textContent = 'エラー: ' + err.message;
+                statusEl.className = 'cs-api-status error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'API取得';
+            }
+        }
+
+        // ── Condition Signal Detail 定数 ──────────────────────────
+        const KOT_API_TOKEN_KEY = 'granavi_kotApiToken';
+        const KOT_PROXY_BASE = 'http://localhost:3001/proxy/v1.0';
+        const KOT_DAILY_API = KOT_PROXY_BASE + '/daily-workings';
+
+        // 病欠キーワード辞書（定数 — localStorage 保存禁止）
+        const SICK_KEYWORDS = [
+            '体調不良', '病欠', '発熱', '熱', '通院', '病院', '体調管理', '体調',
+            '発病', '療養', '傷病', '急病', '風邪', 'インフルエンザ', 'コロナ',
+            '嘔吐', '下痢', '頭痛', '腹痛', 'めまい',
+            '骨折', '手術', '入院', 'ケガ', '怪我', '負傷', '捻挫', '肉離れ',
+            '体の調子', '気分が悪い', 'しんどい', 'だるい', '不調',
+            '受診', 'クリニック', '診察', '検査'
+        ];
+
+        // 展開中の詳細行を管理するマップ（kotId → true/false）
+        // localStorage には保存しない
+        const csDetailOpenRows = {};
+
+        /**
+         * KOT WebAPI から指定メンバーの過去60日の日次勤怠データを取得する。
+         * @param {string} kotId   - 社員番号文字列（例: "00201"）
+         * @param {string} token   - Bearer トークン
+         * @returns {Promise<Array>} - 当該 kotId の dailyWorking 配列
+         */
+        async function fetchKOTDailyDetail(kotId, token) {
+            const today = new Date();
+            const end   = formatLocalDate(today);
+            const start60 = new Date(today);
+            start60.setDate(start60.getDate() - 60);
+            const start = formatLocalDate(start60);
+
+            const url = KOT_DAILY_API + '?start=' + start + '&end=' + end + '&additionalFields=currentDateEmployee';
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!res.ok) {
+                throw new Error('APIエラー: ' + res.status + ' ' + res.statusText);
+            }
+            const data = await res.json();
+            // レスポンスは全社員分 → kotId で絞り込む
+            const all = Array.isArray(data) ? data : (data.dailyWorkings || []);
+            return all.filter(function(d) {
+                const empCode = String(
+                    (d.employee && (d.employee.employeeCode || d.employee.code)) ||
+                    d.employeeCode || d.code || ''
+                );
+                return empCode === kotId || empCode === String(parseInt(kotId, 10));
+            });
+        }
+
+        /**
+         * 日次勤怠レコード配列から有休日を抽出し、病欠疑い分類を返す。
+         * @param {Array} dailyRecords - fetchKOTDailyDetail の戻り値（1名分）
+         * @returns {{ sickCount: number, totalLeaveCount: number, rows: Array }}
+         *   rows: [{ date, scheduleType, note, isSick, weight }]
+         */
+        function classifySickLeave(dailyRecords) {
+            const rows = [];
+            let sickCount = 0;
+            let totalLeaveCount = 0;
+
+            for (let i = 0; i < dailyRecords.length; i++) {
+                const d = dailyRecords[i];
+                const date = d.date || d.workDate || '';
+                const fulltimeHol = d.fulltimeHoliday || null;
+                const halfdayHols = Array.isArray(d.halfdayHolidays) ? d.halfdayHolidays : [];
+
+                const leaves = [];
+                if (fulltimeHol) {
+                    leaves.push({ scheduleType: fulltimeHol.holidayName || fulltimeHol.name || '全日有休', note: fulltimeHol.note || '', weight: 1 });
+                }
+                halfdayHols.forEach(function(h) {
+                    leaves.push({ scheduleType: h.holidayName || h.name || '半休', note: h.note || '', weight: 0.5 });
+                });
+
+                for (let j = 0; j < leaves.length; j++) {
+                    const lv = leaves[j];
+                    const note = lv.note;
+                    const isSick = SICK_KEYWORDS.some(function(kw) { return note.includes(kw); });
+                    totalLeaveCount += lv.weight;
+                    if (isSick) sickCount += lv.weight;
+                    rows.push({ date: date, scheduleType: lv.scheduleType, note: note, isSick: isSick, weight: lv.weight });
+                }
+            }
+
+            return { sickCount: sickCount, totalLeaveCount: totalLeaveCount, rows: rows };
+        }
+
+        /**
+         * 警戒者テーブルの詳細行をトグル（展開 / 折りたたみ）する。
+         * @param {string} kotId       - 対象メンバーの社員番号
+         * @param {string} memberName  - 表示用氏名（未使用だが将来拡張のため保持）
+         * @param {HTMLElement} btn    - 詳細ボタン要素
+         * @param {HTMLElement} mainTr - 対象行の tr 要素
+         */
+        async function toggleDetailRow(kotId, memberName, btn, mainTr) {
+            const detailRowId = 'cs-detail-row-' + kotId;
+            const existingRow = document.getElementById(detailRowId);
+
+            // 既に展開中なら折りたたむ
+            if (existingRow) {
+                existingRow.remove();
+                csDetailOpenRows[kotId] = false;
+                btn.textContent = '詳細';
+                return;
+            }
+
+            // 展開開始
+            csDetailOpenRows[kotId] = true;
+            btn.textContent = '取得中…';
+            btn.disabled = true;
+
+            // 既存エラー行があれば除去
+            const existingErrRow = document.getElementById('cs-detail-err-' + kotId);
+            if (existingErrRow) existingErrRow.remove();
+
+            try {
+                // トークン取得
+                let token = '';
+                try { token = localStorage.getItem(KOT_API_TOKEN_KEY) || ''; } catch(e) {}
+                if (!token) {
+                    throw new Error('KOT APIトークンが未設定です（granavi_kotApiToken）。設定後に再試行してください。');
+                }
+
+                const dailyRecords = await fetchKOTDailyDetail(kotId, token);
+                const result = classifySickLeave(dailyRecords);
+                const sickCount = result.sickCount;
+                const totalLeaveCount = result.totalLeaveCount;
+                const rows = result.rows;
+
+                // 詳細行を mainTr の直後に挿入
+                const detailTr = document.createElement('tr');
+                detailTr.id = detailRowId;
+                detailTr.className = 'cs-detail-row';
+
+                // 列数に合わせて colspan（警戒者テーブルは7列）
+                const td = document.createElement('td');
+                td.colSpan = 7;
+
+                const header = document.createElement('div');
+                header.className = 'cs-detail-header';
+                header.textContent = '体調起因の有休（推定）\u0020' + sickCount + '日\u0020/\u0020有休合計\u0020' + totalLeaveCount + '日（過去60日）';
+                td.appendChild(header);
+
+                if (rows.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'cs-detail-empty';
+                    empty.textContent = '対象期間内に有休取得なし';
+                    td.appendChild(empty);
+                } else {
+                    const table = document.createElement('table');
+                    table.className = 'cs-detail-table';
+                    table.innerHTML = '<thead><tr><th>日付</th><th>スケジュール種別</th><th>備考</th><th>判定</th></tr></thead>';
+                    const tbody2 = document.createElement('tbody');
+                    rows.forEach(function(r) {
+                        const tr2 = document.createElement('tr');
+                        const vals = [r.date, r.scheduleType, r.note || '―'];
+                        vals.forEach(function(val) {
+                            const td2 = document.createElement('td');
+                            td2.textContent = val;
+                            tr2.appendChild(td2);
+                        });
+                        const judgeCell = document.createElement('td');
+                        if (r.isSick) {
+                            judgeCell.innerHTML = '<span class="cs-detail-sick">🔴 体調起因（推定）</span>';
+                        } else {
+                            judgeCell.innerHTML = '<span class="cs-detail-check">⚪ 要確認</span>';
+                        }
+                        tr2.appendChild(judgeCell);
+                        tbody2.appendChild(tr2);
+                    });
+                    table.appendChild(tbody2);
+                    td.appendChild(table);
+                }
+
+                detailTr.appendChild(td);
+                mainTr.insertAdjacentElement('afterend', detailTr);
+
+                btn.textContent = '閉じる';
+                btn.disabled = false;
+
+            } catch (err) {
+                csDetailOpenRows[kotId] = false;
+
+                const errTr = document.createElement('tr');
+                errTr.id = 'cs-detail-err-' + kotId;
+                const errTd = document.createElement('td');
+                errTd.colSpan = 7;
+                errTd.innerHTML = '<span class="cs-detail-error">⚠ ' + escHtml(err.message) + '</span>';
+                errTr.appendChild(errTd);
+                mainTr.insertAdjacentElement('afterend', errTr);
+
+                btn.textContent = '詳細';
+                btn.disabled = false;
+            }
+        }
+
         const CS_MAX_SNAPSHOTS = 12;
         const TREND_OPTIONS = ['慢性', '一時的', '増加傾向', '改善傾向', '再発', '要確認'];
 
@@ -3887,85 +4419,47 @@
         async function onCsRunClick() {
             const currentFile = document.getElementById('csCurrentFile').files[0];
             if (!currentFile) return;
-
             const currentRaw = await currentFile.text();
-            const { members: currentParsed, snapshotMonth, periodStart: currentPeriodStart } = parseKOTData(currentRaw);
-            if (currentParsed.length === 0) {
+            const currentResult = parseKOTData(currentRaw);
+            if (currentResult.members.length === 0) {
                 alert('当月ファイルからメンバーデータを取得できませんでした。\nKOT形式のHTMLファイルか確認してください。');
                 return;
             }
-
-            // 先月ファイル（任意）
-            let prevParsed = [];
-            let prevPeriodStart = '';
-            const prevFile = document.getElementById('csPrevFile').files[0];
             let prevResult = null;
+            const prevFile = document.getElementById('csPrevFile').files[0];
             if (prevFile) {
                 const prevRaw = await prevFile.text();
                 prevResult = parseKOTData(prevRaw);
-                prevParsed = prevResult.members;
-                prevPeriodStart = prevResult.periodStart;
             }
-            const importedAt = new Date().toISOString().slice(0, 10);
-
-            // ファイル順序チェック（先月ファイルがある場合のみ）
+            // ファイル順序チェック
             const fileOrderWarnEl = document.getElementById('csFileOrderWarning');
-            if (prevFile && prevResult && prevResult.snapshotMonth) {
-                // 当月 <= 先月 なら順序逆の可能性
-                if (snapshotMonth <= prevResult.snapshotMonth) {
-                    fileOrderWarnEl.style.display = 'block';
-                } else {
-                    fileOrderWarnEl.style.display = 'none';
-                }
+            if (prevResult && prevResult.snapshotMonth) {
+                fileOrderWarnEl.style.display =
+                    (currentResult.snapshotMonth <= prevResult.snapshotMonth) ? 'block' : 'none';
             } else {
                 fileOrderWarnEl.style.display = 'none';
             }
-            // 警告があっても実行を継続する
-
-            // 慢性・傾向計算
-            const { alertThreshold: at, watchThreshold: wt } = loadCsThresholds();
-            let members = computeChronicAndTrend(currentParsed, prevParsed.length > 0 ? prevParsed.map(m => ({
-                ...m,
-                isAlert: m.absenceDays >= at,
-                isWatch: m.absenceDays >= wt && m.absenceDays < at
-            })) : []);
-
-            // スナップショット管理
-            let snapshots = loadCsSnapshots();
-            const existingIdx = snapshots.findIndex(s => s.snapshotMonth === snapshotMonth);
-
-            if (existingIdx >= 0) {
-                if (!confirm(`${snapshotMonth} のデータは既にあります。上書きしますか？`)) return;
-                // 既存の manualOverride 状態を引き継ぐ
-                const existingMembers = snapshots[existingIdx].members || [];
-                members = members.map(m => {
-                    const ex = existingMembers.find(e => e.kotId === m.kotId);
-                    if (ex && ex.manualOverride) {
-                        return { ...m, absenceTrend: ex.absenceTrend, manualOverride: true, assignee: ex.assignee, memo: ex.memo };
-                    }
-                    return m;
+            // 当月＋前月の absenceDays を合算
+            if (prevResult && prevResult.members.length > 0) {
+                const prevMap = {};
+                prevResult.members.forEach(function(m) { prevMap[m.kotId] = m; });
+                currentResult.members = currentResult.members.map(function(m) {
+                    const prev = prevMap[m.kotId];
+                    return prev
+                        ? { ...m, absenceDays: m.absenceDays + prev.absenceDays }
+                        : m;
                 });
-                snapshots[existingIdx] = { snapshotMonth, importedAt, periodStart: currentPeriodStart, prevPeriodStart, members };
-            } else {
-                snapshots.push({ snapshotMonth, importedAt, periodStart: currentPeriodStart, prevPeriodStart, members });
-                // 上限超過時は最古を削除
-                if (snapshots.length > CS_MAX_SNAPSHOTS) {
-                    snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
-                    snapshots = snapshots.slice(snapshots.length - CS_MAX_SNAPSHOTS);
-                }
+                currentResult.prevPeriodStart = prevResult.periodStart;
             }
-
-            // 再発判定補完
-            snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
-            const newIdx = snapshots.findIndex(s => s.snapshotMonth === snapshotMonth);
-            snapshots[newIdx].members = applyRelapseDetection(snapshots[newIdx].members, snapshots, newIdx);
-
-            saveCsSnapshots(snapshots);
-            renderConditionSignal();
+            await processCsData(currentResult, prevResult);
         }
 
         // コンディションシグナル描画
         function renderConditionSignal() {
+            // 再描画前に既存の詳細展開行を除去し、展開状態をリセット
+            document.querySelectorAll('.cs-detail-row').forEach(el => el.remove());
+            Object.keys(csDetailOpenRows).forEach(k => { delete csDetailOpenRows[k]; });
+
             const { alertThreshold, watchThreshold } = loadCsThresholds();
             const snapshots = loadCsSnapshots();
             snapshots.sort((a, b) => a.snapshotMonth.localeCompare(b.snapshotMonth));
@@ -4050,6 +4544,8 @@
         function renderCsTable(tbodyId, memberList, rowClass, snapshotMonth) {
             const tbody = document.getElementById(tbodyId);
             tbody.innerHTML = '';
+            const isAlertTable = (tbodyId === 'csAlertBody');
+
             memberList.forEach(m => {
                 const tr = document.createElement('tr');
                 tr.className = rowClass;
@@ -4099,6 +4595,19 @@
                 tr.appendChild(td(trendSel));
                 tr.appendChild(td(assigneeInput));
                 tr.appendChild(td(memoInput));
+
+                // 警戒者テーブルのみ詳細ボタンを追加
+                if (isAlertTable) {
+                    const detailBtn = document.createElement('button');
+                    detailBtn.type = 'button';
+                    detailBtn.className = 'cs-detail-btn';
+                    detailBtn.textContent = csDetailOpenRows[m.kotId] ? '閉じる' : '詳細';
+                    detailBtn.addEventListener('click', function() {
+                        toggleDetailRow(m.kotId, m.name, detailBtn, tr);
+                    });
+                    tr.appendChild(td(detailBtn));
+                }
+
                 tbody.appendChild(tr);
             });
         }
@@ -4204,6 +4713,7 @@
             }
             if (isCondition) {
                 initCsThresholdUI();
+                initCsApiTokenUI();
                 renderConditionSignal();
             }
         }
@@ -4757,6 +5267,7 @@
             document.getElementById('tabPeriodic').addEventListener('click',  () => switchTab('periodic'));
             document.getElementById('tabCondition').addEventListener('click', () => switchTab('condition'));
             // コンディションシグナル
+            document.getElementById('csApiRunBtn').addEventListener('click', onCsApiRunClick);
             document.getElementById('csCurrentFile').addEventListener('change', onCsCurrentFileChange);
             document.getElementById('csRunBtn').addEventListener('click', onCsRunClick);
             document.getElementById('csAlertThreshold').addEventListener('input', onCsThresholdChange);
@@ -4875,4 +5386,4 @@
         initializeApp();
     </script>
 </body>
-</html>
+</
