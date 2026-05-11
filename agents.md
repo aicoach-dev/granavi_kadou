@@ -115,10 +115,15 @@ Do not modify existing tabs (稼働一覧, 月次実績, 定期タスク確認).
 - Name field format in KOT: "00201 豊田 淳" → split on space, [0]=kotId, [1+]=displayName
 - Skip rows where kotId does not match /^\d+$/ (skip totals row)
 
-### Thresholds (fixed, not configurable)
-- Alert (警戒): absenceDays >= 3
-- Watch (要注意): absenceDays == 2
-- Display cutoff: absenceDays >= 2 (absenceDays < 2 → not shown)
+### Thresholds (user-configurable, persisted in localStorage)
+- Alert (警戒): absenceDays >= alertThreshold（デフォルト: 3）
+- Watch (要注意): absenceDays >= watchThreshold かつ < alertThreshold（デフォルト: 2）
+- Display cutoff: absenceDays >= watchThreshold
+- 閾値は画面上の数値入力欄から変更可能。変更時に即時再描画する。
+- localStorage key: granavi_csThresholds
+  構造: { alertThreshold: 3, watchThreshold: 2 }
+- alertThreshold > watchThreshold を常に保証すること。
+  逆転した場合は入力を受け付けず、エラーメッセージを表示する。
 
 ### Chronic detection
 - Chronic (慢性): current month isAlert === true AND previous month isAlert === true
@@ -169,6 +174,7 @@ Do not modify existing tabs (稼働一覧, 月次実績, 定期タスク確認).
 - Do not save send history.
 - Do not add per-member notes beyond the memo field.
 - assignee field is free text only. Do not link to existing member records.
+- Do not hardcode alert/watch thresholds. Always read from granavi_csThresholds.
 
 ### Destructive operations
 - Re-importing the same month overwrites that snapshot only. Confirm dialog required.
@@ -179,3 +185,18 @@ Keep KOT parsing logic in a separate function (e.g. parseKOTData(rawText))
 that accepts raw HTML string and returns a member array.
 The file upload handler and future API handler both call this same function.
 Do not mix parsing logic into the upload event handler directly.
+
+### Display Period Label
+- セクションラベルに集計期間を表示する。
+- 先月ファイルあり: {先月periodStart}〜{実行日} 例: 2026/04/01〜2026/05/11
+- 先月ファイルなし: {当月periodStart}〜{実行日} 例: 2026/04/01〜2026/05/11
+- periodStart は parseKOTData の戻り値から取得する（h2タグ由来）。
+- 実行日は new Date() から生成する。
+- 警戒者・要注意の両セクションに同じ期間ラベルを表示する。
+
+### Operation Notes
+- 実行タイミング: 毎週月曜朝
+- KOT入力前提: 社員がKOTを日次入力していることが集計精度の前提。
+- 画面に以下の注記を常時表示すること:
+  「※集計精度はKOTの日次入力が前提です。毎週月曜朝に実行してください。」
+- この注記は投入エリアの直下に小さく表示する。
