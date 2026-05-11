@@ -4080,10 +4080,11 @@
         const csDetailOpenRows = {};
 
         /**
-         * KOT WebAPI から指定メンバーの過去60日の日次勤怠データを取得する。
+         * KOT WebAPI から指定メンバーの過去60日の有休データを取得する。
+         * daily-workings で有休取得日を、requests/schedules で備考(message)を取得し突き合わせる。
          * @param {string} kotId   - 社員番号文字列（例: "00201"）
          * @param {string} token   - Bearer トークン
-         * @returns {Promise<Array>} - 当該 kotId の dailyWorking 配列
+         * @returns {Promise<Array>} - 有休取得日のみの配列 [{ date, kotId, holidayType, note, employeeKey }]
          */
         async function fetchKOTDailyDetail(kotId, token) {
             const today = new Date();
@@ -4092,32 +4093,111 @@
             start60.setDate(start60.getDate() - 60);
             const start = formatLocalDate(start60);
 
-            const url = KOT_DAILY_API + '?start=' + start + '&end=' + end + '&additionalFields=currentDateEmployee';
-            const res = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
+            // 当月・前月の YYYY-MM を生成
+            const thisMonth  = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+            const prevDate   = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const prevMonth  = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+
+            const authHeader = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
+            // ① daily-workings、② requests/schedules（当月・前月）を並行取得
+            const dailyUrl   = KOT_DAILY_API + '?start=' + start + '&end=' + end + '&additionalFields=currentDateEmployee';
+            const schedUrlCurrent = KOT_PROXY_BASE + '/requests/schedules/' + thisMonth;
+            const schedUrlPrev    = KOT_PROXY_BASE + '/requests/schedules/' + prevMonth;
+
+            const [dailyRes, schedCurrentRes, schedPrevRes] = await Promise.all([
+                fetch(dailyUrl,        { method: 'GET', headers: authHeader }),
+                fetch(schedUrlCurrent, { method: 'GET', headers: authHeader }),
+                fetch(schedUrlPrev,    { method: 'GET', headers: authHeader })
+            ]);
+
+            if (!dailyRes.ok) {
+                throw new Error('APIエラー (daily-workings): ' + dailyRes.status + ' ' + dailyRes.statusText);
+            }
+
+            const dailyData = await dailyRes.json();
+
+            // requests/schedules は取得失敗しても note を空にして続行
+            let schedRequests = [];
+            if (schedCurrentRes.ok) {
+                try {
+                    const d = await schedCurrentRes.json();
+                    schedRequests = schedRequests.concat(Array.isArray(d.requests) ? d.requests : []);
+                } catch(e) {}
+            }
+            if (schedPrevRes.ok) {
+                try {
+                    const d = await schedPrevRes.json();
+                    schedRequests = schedRequests.concat(Array.isArray(d.requests) ? d.requests : []);
+                } catch(e) {}
+            }
+
+            // requests/schedules を (employeeKey + date) → message のマップに変換
+            // 全日休暇 かつ status === 'approved' のみ対象
+            const noteMap = {};
+            schedRequests.forEach(function(req) {
+                if (req.status !== 'approved') return;
+                if (!req.requested || req.requested.scheduleTypeName !== '全日休暇') return;
+                const key = (req.employeeKey || '') + '|' + (req.date || '');
+                noteMap[key] = req.message || '';
+            });
+
+            // daily-workings レスポンス構造: data[i].dailyWorkings[j]
+            const allDays = Array.isArray(dailyData) ? dailyData : (dailyData.dailyWorkings || []);
+
+            // data が [{dailyWorkings:[...]}, ...] のラッパー形式の場合を処理
+            let flatDays = [];
+            if (allDays.length > 0 && Array.isArray(allDays[0].dailyWorkings)) {
+                allDays.forEach(function(wrapper) {
+                    flatDays = flatDays.concat(wrapper.dailyWorkings || []);
+                });
+            } else {
+                flatDays = allDays;
+            }
+
+            // kotId で絞り込み（currentDateEmployee.code を使用）
+            const memberDays = flatDays.filter(function(record) {
+                const emp = record.currentDateEmployee || record.employee || {};
+                const code = String(emp.code || emp.employeeCode || record.employeeCode || record.code || '');
+                return code === kotId || code === String(parseInt(kotId, 10));
+            });
+
+            // 有休取得日のみを抽出し、note を突き合わせて返す
+            const result = [];
+            memberDays.forEach(function(record) {
+                const date = record.date || record.workDate || '';
+                const empKey = (record.currentDateEmployee && record.currentDateEmployee.employeeKey) ||
+                               (record.employee && record.employee.employeeKey) ||
+                               record.employeeKey || '';
+
+                const obtained = record.holidaysObtained || {};
+                const fulltimeHolMap = obtained.fulltimeHoliday || {};
+                const halfdayHolArr  = obtained.halfdayHolidays || [];
+
+                const hasFull = Object.keys(fulltimeHolMap).length > 0;
+                const hasHalf = halfdayHolArr.length > 0;
+
+                if (hasFull) {
+                    const noteKey = empKey + '|' + date;
+                    const note = (noteKey in noteMap) ? noteMap[noteKey] : '';
+                    result.push({ date: date, kotId: kotId, holidayType: '全日', note: note, employeeKey: empKey });
+                }
+                if (hasHalf) {
+                    const noteKey = empKey + '|' + date;
+                    const note = (noteKey in noteMap) ? noteMap[noteKey] : '';
+                    result.push({ date: date, kotId: kotId, holidayType: '半休', note: note, employeeKey: empKey });
                 }
             });
-            if (!res.ok) {
-                throw new Error('APIエラー: ' + res.status + ' ' + res.statusText);
-            }
-            const data = await res.json();
-            // レスポンスは全社員分 → kotId で絞り込む
-            const all = Array.isArray(data) ? data : (data.dailyWorkings || []);
-            return all.filter(function(d) {
-                const empCode = String(
-                    (d.employee && (d.employee.employeeCode || d.employee.code)) ||
-                    d.employeeCode || d.code || ''
-                );
-                return empCode === kotId || empCode === String(parseInt(kotId, 10));
-            });
+
+            // 日付昇順でソート
+            result.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+            return result;
         }
 
         /**
-         * 日次勤怠レコード配列から有休日を抽出し、病欠疑い分類を返す。
+         * 有休取得日配列から病欠疑い分類を返す。
          * @param {Array} dailyRecords - fetchKOTDailyDetail の戻り値（1名分）
+         *   各要素: { date, kotId, holidayType, note, employeeKey }
          * @returns {{ sickCount: number, totalLeaveCount: number, rows: Array }}
          *   rows: [{ date, scheduleType, note, isSick, weight }]
          */
@@ -4128,26 +4208,15 @@
 
             for (let i = 0; i < dailyRecords.length; i++) {
                 const d = dailyRecords[i];
-                const date = d.date || d.workDate || '';
-                const fulltimeHol = d.fulltimeHoliday || null;
-                const halfdayHols = Array.isArray(d.halfdayHolidays) ? d.halfdayHolidays : [];
+                const date         = d.date || '';
+                const scheduleType = d.holidayType || '全日';
+                const note         = d.note || '';
+                const weight       = (scheduleType === '半休') ? 0.5 : 1;
 
-                const leaves = [];
-                if (fulltimeHol) {
-                    leaves.push({ scheduleType: fulltimeHol.holidayName || fulltimeHol.name || '全日有休', note: fulltimeHol.note || '', weight: 1 });
-                }
-                halfdayHols.forEach(function(h) {
-                    leaves.push({ scheduleType: h.holidayName || h.name || '半休', note: h.note || '', weight: 0.5 });
-                });
-
-                for (let j = 0; j < leaves.length; j++) {
-                    const lv = leaves[j];
-                    const note = lv.note;
-                    const isSick = SICK_KEYWORDS.some(function(kw) { return note.includes(kw); });
-                    totalLeaveCount += lv.weight;
-                    if (isSick) sickCount += lv.weight;
-                    rows.push({ date: date, scheduleType: lv.scheduleType, note: note, isSick: isSick, weight: lv.weight });
-                }
+                const isSick = SICK_KEYWORDS.some(function(kw) { return note.includes(kw); });
+                totalLeaveCount += weight;
+                if (isSick) sickCount += weight;
+                rows.push({ date: date, scheduleType: scheduleType, note: note, isSick: isSick, weight: weight });
             }
 
             return { sickCount: sickCount, totalLeaveCount: totalLeaveCount, rows: rows };
@@ -5386,4 +5455,4 @@
         initializeApp();
     </script>
 </body>
-</
+</html>
