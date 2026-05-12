@@ -4091,6 +4091,10 @@
         // localStorage には保存しない
         const csDetailBadges = {};
 
+        // 詳細データのセッション内キャッシュ（kotId → dailyRecords 配列）
+        // localStorage には保存しない。ページを閉じると消える。
+        const csDetailCache = new Map();
+
         /**
          * KOT WebAPI から指定メンバーの過去60日の有休データを取得する。
          * daily-workings で有休取得日を、requests/schedules で備考(message)を取得し突き合わせる。
@@ -4263,14 +4267,21 @@
             if (existingErrRow) existingErrRow.remove();
 
             try {
-                // トークン取得
-                let token = '';
-                try { token = localStorage.getItem(KOT_API_TOKEN_KEY) || ''; } catch(e) {}
-                if (!token) {
-                    throw new Error('KOT APIトークンが未設定です（granavi_kotApiToken）。設定後に再試行してください。');
+                let dailyRecords;
+                if (csDetailCache.has(kotId)) {
+                    // キャッシュヒット: APIコールをスキップ
+                    dailyRecords = csDetailCache.get(kotId);
+                } else {
+                    // トークン取得
+                    let token = '';
+                    try { token = localStorage.getItem(KOT_API_TOKEN_KEY) || ''; } catch(e) {}
+                    if (!token) {
+                        throw new Error('KOT APIトークンが未設定です（granavi_kotApiToken）。設定後に再試行してください。');
+                    }
+                    dailyRecords = await fetchKOTDailyDetail(kotId, token);
+                    // 取得成功後にキャッシュへ保存
+                    csDetailCache.set(kotId, dailyRecords);
                 }
-
-                const dailyRecords = await fetchKOTDailyDetail(kotId, token);
                 const result = classifySickLeave(dailyRecords);
                 const sickCount = result.sickCount;
                 const totalLeaveCount = result.totalLeaveCount;
