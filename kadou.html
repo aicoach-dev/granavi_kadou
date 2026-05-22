@@ -1535,6 +1535,252 @@
             color: #94a3b8;
             font-style: italic;
         }
+
+        /* ── 契約管理 ── */
+        .ct-summary-bar {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .ct-stat {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.625rem 1rem;
+            min-width: 110px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .ct-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+        .ct-stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.125rem;
+        }
+        .ct-threshold-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            font-size: 0.8125rem;
+            color: #475569;
+        }
+        .ct-threshold-group {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        .ct-threshold-input {
+            width: 4.5rem;
+            padding: 0.25rem 0.4rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            text-align: center;
+            color: #1e293b;
+        }
+        .ct-threshold-error {
+            color: #dc2626;
+            font-size: 0.75rem;
+            display: none;
+        }
+        .ct-section-label {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #334155;
+            margin: 1.25rem 0 0.5rem;
+            padding-bottom: 0.375rem;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .ct-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            padding: 0.1rem 0.5rem;
+        }
+        .ct-badge-alert { background: #fee2e2; color: #dc2626; }
+        .ct-badge-watch { background: #fef3c7; color: #92400e; }
+        .ct-badge-none  { background: #e2e8f0; color: #475569; }
+        .ct-table-wrap { overflow-x: auto; margin-bottom: 0.75rem; }
+        .ct-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            font-size: 0.8125rem;
+        }
+        .ct-table th {
+            padding: 0.5rem 0.75rem;
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .ct-table td {
+            padding: 0.5rem 0.75rem;
+            border-top: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .ct-table tr.ct-row-alert { background: #fff5f5; }
+        .ct-table tr.ct-row-watch { background: #fffbeb; }
+        .ct-table tr.ct-row-inactive { background: #f8fafc; color: #94a3b8; }
+        .ct-remaining-alert { color: #dc2626; font-weight: 700; }
+        .ct-remaining-watch { color: #92400e; font-weight: 600; }
+        .ct-edit-btn {
+            padding: 0.25rem 0.625rem;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: #334155;
+            white-space: nowrap;
+        }
+        .ct-edit-btn:hover { background: #e2e8f0; }
+        .ct-add-btn {
+            padding: 0.4rem 0.875rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 0.625rem;
+        }
+        .ct-add-btn:hover { background: #2563eb; }
+        .ct-filter-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.625rem;
+        }
+        .ct-filter-select {
+            padding: 0.3rem 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.8125rem;
+            color: #334155;
+            background: white;
+        }
+        .ct-accordion-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #334155;
+            user-select: none;
+        }
+        .ct-accordion-header:hover { background: #f1f5f9; }
+        .ct-accordion-arrow { font-size: 0.75rem; transition: transform 0.15s; }
+        .ct-accordion-arrow.open { transform: rotate(90deg); }
+        .ct-accordion-body { margin-bottom: 0.75rem; }
+        .ct-empty-msg {
+            padding: 2rem;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        /* 契約モーダル */
+        .ct-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .ct-modal-overlay.visible { display: flex; }
+        .ct-modal {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .ct-modal h2 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1.25rem;
+        }
+        .ct-form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.875rem;
+            flex-wrap: wrap;
+        }
+        .ct-form-group {
+            flex: 1 1 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .ct-form-group label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .ct-form-group input,
+        .ct-form-group select,
+        .ct-form-group textarea {
+            padding: 0.4rem 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            color: #1e293b;
+        }
+        .ct-form-group textarea { resize: vertical; min-height: 3rem; }
+        .ct-form-group .ct-static-text {
+            padding: 0.4rem 0;
+            font-size: 0.8125rem;
+            color: #334155;
+        }
+        .ct-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .ct-modal-footer .ct-delete-btn {
+            margin-right: auto;
+            padding: 0.4rem 0.875rem;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 0.25rem;
+            color: #dc2626;
+            font-size: 0.8125rem;
+            cursor: pointer;
+        }
+        .ct-modal-footer .ct-delete-btn:hover { background: #fee2e2; }
     </style>
 </head>
 <body>
@@ -1559,6 +1805,7 @@
             <button class="tab-btn" id="tabMonthly">月次実績</button>
             <button class="tab-btn" id="tabPeriodic">定期タスク確認</button>
             <button class="tab-btn" id="tabCondition">コンディションシグナル</button>
+            <button class="tab-btn" id="tabContract">契約管理</button>
         </div>
     </div>
 
@@ -1817,6 +2064,186 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- ==============================
+         契約管理セクション
+    ============================== -->
+    <div id="contractSection" style="display:none">
+        <div class="main-container">
+
+            <!-- サマリーバー -->
+            <div class="ct-summary-bar" id="ctSummaryBar">
+                <div class="ct-stat">
+                    <div class="ct-stat-value" id="ctAlertCount">0</div>
+                    <div class="ct-stat-label">警告（期限近）</div>
+                </div>
+                <div class="ct-stat">
+                    <div class="ct-stat-value" id="ctWatchCount">0</div>
+                    <div class="ct-stat-label">注意（期限接近）</div>
+                </div>
+                <div class="ct-stat">
+                    <div class="ct-stat-value" id="ctTotalCount">0</div>
+                    <div class="ct-stat-label">契約登録数</div>
+                </div>
+                <div class="ct-stat">
+                    <div class="ct-stat-value" id="ctInactiveCount">0</div>
+                    <div class="ct-stat-label">待機中</div>
+                </div>
+                <div class="ct-stat">
+                    <div class="ct-stat-value" id="ctNoEndCount">0</div>
+                    <div class="ct-stat-label">終了日未登録</div>
+                </div>
+            </div>
+
+            <!-- 閾値設定行 -->
+            <div class="ct-threshold-row">
+                <div class="ct-threshold-group">
+                    <label for="ctAlertDays">警告ライン:</label>
+                    <input type="number" id="ctAlertDays" class="ct-threshold-input" min="1" value="30">
+                    <span>日以内</span>
+                </div>
+                <div class="ct-threshold-group">
+                    <label for="ctWatchDays">注意ライン:</label>
+                    <input type="number" id="ctWatchDays" class="ct-threshold-input" min="1" value="60">
+                    <span>日以内</span>
+                </div>
+                <span class="ct-threshold-error" id="ctThresholdError">警告ラインは注意ラインより小さい値にしてください</span>
+            </div>
+
+            <!-- 警告セクション -->
+            <div id="ctAlertSection" style="display:none">
+                <div class="ct-section-label">
+                    警告：期限が近い契約
+                    <span class="ct-badge ct-badge-alert" id="ctAlertBadge">0</span>
+                </div>
+                <div class="ct-table-wrap">
+                    <table class="ct-table">
+                        <thead><tr>
+                            <th>名前</th><th>チーム</th><th>種別</th><th>終了日</th>
+                            <th>残日数</th><th>客先</th><th></th>
+                        </tr></thead>
+                        <tbody id="ctAlertBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 月別更新予定 -->
+            <div id="ctMonthlySection">
+                <div class="ct-section-label">月別・更新予定一覧</div>
+                <div id="ctMonthlyAccordion"></div>
+            </div>
+
+            <!-- 全契約一覧 -->
+            <div class="ct-section-label" style="margin-top:1.5rem">
+                全契約一覧
+            </div>
+            <div class="ct-filter-row">
+                <select class="ct-filter-select" id="ctFilterType">
+                    <option value="">種別: すべて</option>
+                    <option value="派遣">派遣</option>
+                    <option value="SES">SES</option>
+                    <option value="準委任">準委任</option>
+                    <option value="請負">請負</option>
+                    <option value="その他">その他</option>
+                </select>
+                <select class="ct-filter-select" id="ctFilterStatus">
+                    <option value="">ステータス: すべて</option>
+                    <option value="稼働中">稼働中</option>
+                    <option value="待機中">待機中</option>
+                    <option value="終了">終了</option>
+                </select>
+                <select class="ct-filter-select" id="ctFilterTeam">
+                    <option value="">チーム: すべて</option>
+                </select>
+            </div>
+            <button class="ct-add-btn" id="ctAddBtn">＋ 契約を追加</button>
+            <div class="ct-table-wrap">
+                <table class="ct-table">
+                    <thead><tr>
+                        <th>名前</th><th>チーム</th><th>種別</th><th>ステータス</th>
+                        <th>初回配属日</th><th>開始日</th><th>終了日</th>
+                        <th>残日数</th><th>客先</th><th></th>
+                    </tr></thead>
+                    <tbody id="ctAllBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==============================
+         モーダル：契約 追加・編集
+    ============================== -->
+    <div class="ct-modal-overlay" id="ctModalOverlay">
+        <div class="ct-modal">
+            <h2 id="ctModalTitle">契約を追加</h2>
+
+            <div class="ct-form-row">
+                <div class="ct-form-group" id="ctMemberSelectGroup">
+                    <label>メンバー *</label>
+                    <select id="ctMemberSelect"></select>
+                </div>
+                <div class="ct-form-group" id="ctMemberTextGroup" style="display:none">
+                    <label>メンバー</label>
+                    <div class="ct-static-text" id="ctMemberText"></div>
+                </div>
+                <div class="ct-form-group">
+                    <label>種別 *</label>
+                    <select id="ctContractType">
+                        <option value="">選択してください</option>
+                        <option value="派遣">派遣</option>
+                        <option value="SES">SES</option>
+                        <option value="準委任">準委任</option>
+                        <option value="請負">請負</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="ct-form-row">
+                <div class="ct-form-group">
+                    <label>ステータス *</label>
+                    <select id="ctContractStatus">
+                        <option value="稼働中">稼働中</option>
+                        <option value="待機中">待機中</option>
+                        <option value="終了">終了</option>
+                    </select>
+                </div>
+                <div class="ct-form-group">
+                    <label>客先名</label>
+                    <input type="text" id="ctClientName" placeholder="○○株式会社">
+                </div>
+            </div>
+
+            <div class="ct-form-row">
+                <div class="ct-form-group">
+                    <label>初回配属日</label>
+                    <input type="date" id="ctOriginalStart">
+                </div>
+                <div class="ct-form-group">
+                    <label>契約開始日</label>
+                    <input type="date" id="ctContractStart">
+                </div>
+            </div>
+
+            <div class="ct-form-row">
+                <div class="ct-form-group">
+                    <label>契約終了日</label>
+                    <input type="date" id="ctContractEnd">
+                </div>
+                <div class="ct-form-group">
+                    <label>備考</label>
+                    <input type="text" id="ctNote" placeholder="任意">
+                </div>
+            </div>
+
+            <div class="ct-modal-footer">
+                <button class="ct-delete-btn" id="ctDeleteBtn" style="display:none">削除</button>
+                <button class="btn-cancel" id="ctCancelBtn">キャンセル</button>
+                <button class="btn-save"   id="ctSaveBtn">保存</button>
+            </div>
         </div>
     </div>
 
@@ -2148,6 +2575,10 @@
         const PERIODIC_TASK_ITEMS = ['スキルシート更新', 'スキルマトリクス更新', 'CS調査回収', '目標設定／更新', '成長ポイント記入'];
         const PERIODIC_TASK_STATUS_ORDER = ['未', '済', '対象外'];
         const MEMBER_LOCAL_STORAGE_KEY_PREFIXES = [];
+        const CONTRACTS_KEY          = 'granavi_contracts';
+        const CONTRACT_SETTINGS_KEY  = 'granavi_contractSettings';
+        const CONTRACT_TYPES         = ['派遣', 'SES', '準委任', '請負', 'その他'];
+        const CONTRACT_STATUSES      = ['稼働中', '待機中', '終了'];
 
         // =========================================================
         // 状態変数（既存）
@@ -2156,6 +2587,13 @@
         let editingMemberId  = null;
         let lastLoadedAt     = null;
         let fetchedAt        = null;
+
+        // =========================================================
+        // 状態変数（契約管理）
+        // =========================================================
+        let contracts         = [];
+        let contractSettings  = { alertDays: 30, watchDays: 60 };
+        let editingContractId = null;
 
         // =========================================================
         // 状態変数（月次実績）
@@ -2213,7 +2651,15 @@
         }
 
         function cleanupDeletedMemberLocalStorage(memberId) {
-            if (!memberId || MEMBER_LOCAL_STORAGE_KEY_PREFIXES.length === 0) return;
+            if (!memberId) return;
+            try {
+                const contractsRaw = JSON.parse(localStorage.getItem('granavi_contracts') || '[]');
+                const contractsUpdated = contractsRaw.filter(c => c.memberId !== memberId);
+                localStorage.setItem('granavi_contracts', JSON.stringify(contractsUpdated));
+            } catch (e) {
+                // localStorage cleanup failure should not block member deletion
+            }
+            if (MEMBER_LOCAL_STORAGE_KEY_PREFIXES.length === 0) return;
             try {
                 MEMBER_LOCAL_STORAGE_KEY_PREFIXES.forEach(prefix => {
                     const keysToRemove = [];
@@ -2475,6 +2921,8 @@
 
             recipientSettings = loadRecipientSettings();
             periodicTasksState = loadPeriodicTasks();
+            loadContracts();
+            loadContractSettings();
             syncPeriodicTasksWithMembers();
             populateTeamSelects();
             setupEventListeners();
@@ -4791,17 +5239,398 @@
         }
 
         // =========================================================
+        // =========================================================
+        // 契約管理：ユーティリティ
+        // =========================================================
+        function calcRemainingDays(contractEnd) {
+            if (!contractEnd) return null;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const end   = new Date(contractEnd); end.setHours(0,0,0,0);
+            return Math.round((end - today) / 86400000);
+        }
+
+        function getContractAlertLevel(contractEnd, settings) {
+            if (!contractEnd) return 'no-date';
+            const days = calcRemainingDays(contractEnd);
+            if (days === null) return 'no-date';
+            if (days <= settings.alertDays) return 'alert';
+            if (days <= settings.watchDays) return 'watch';
+            return 'none';
+        }
+
+        function loadContracts() {
+            try {
+                const raw = localStorage.getItem(CONTRACTS_KEY);
+                contracts = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(contracts)) contracts = [];
+            } catch(e) { contracts = []; }
+        }
+
+        function saveContracts() {
+            try { localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts)); } catch(e) {}
+        }
+
+        function loadContractSettings() {
+            try {
+                const raw = localStorage.getItem(CONTRACT_SETTINGS_KEY);
+                const parsed = raw ? JSON.parse(raw) : {};
+                contractSettings = {
+                    alertDays: Number(parsed.alertDays) || 30,
+                    watchDays: Number(parsed.watchDays) || 60
+                };
+            } catch(e) { contractSettings = { alertDays: 30, watchDays: 60 }; }
+        }
+
+        function saveContractSettings() {
+            try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(contractSettings)); } catch(e) {}
+        }
+
+        function getMemberById(id) { return members.find(m => m.id === id) || null; }
+
+        function fmtDate(d) {
+            if (!d) return '―';
+            const parts = d.split('-');
+            if (parts.length !== 3) return d;
+            return `${parts[0]}/${parts[1]}/${parts[2]}`;
+        }
+
+        // =========================================================
+        // 契約管理：描画
+        // =========================================================
+        function renderContractDashboard() {
+            loadContracts();
+            const s = contractSettings;
+            const today = new Date(); today.setHours(0,0,0,0);
+
+            const activeContracts = contracts.filter(c => c.contractStatus === '稼働中');
+            const inactiveCount   = contracts.filter(c => c.contractStatus === '待機中').length;
+            const noEndCount      = activeContracts.filter(c => !c.contractEnd).length;
+
+            const alertList = activeContracts.filter(c => c.contractEnd && getContractAlertLevel(c.contractEnd, s) === 'alert');
+            const watchList = activeContracts.filter(c => c.contractEnd && getContractAlertLevel(c.contractEnd, s) === 'watch');
+
+            document.getElementById('ctAlertCount').textContent    = alertList.length;
+            document.getElementById('ctWatchCount').textContent    = watchList.length;
+            document.getElementById('ctTotalCount').textContent    = contracts.length;
+            document.getElementById('ctInactiveCount').textContent = inactiveCount;
+            document.getElementById('ctNoEndCount').textContent    = noEndCount;
+
+            // 警告セクション
+            const alertSection = document.getElementById('ctAlertSection');
+            alertSection.style.display = alertList.length > 0 ? '' : 'none';
+            document.getElementById('ctAlertBadge').textContent = alertList.length;
+            const alertBody = document.getElementById('ctAlertBody');
+            alertBody.innerHTML = '';
+            alertList.sort((a,b) => (a.contractEnd||'').localeCompare(b.contractEnd||'')).forEach(c => {
+                const member = getMemberById(c.memberId);
+                const days   = calcRemainingDays(c.contractEnd);
+                const tr = document.createElement('tr');
+                tr.className = 'ct-row-alert';
+                tr.innerHTML = `
+                    <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
+                    <td>${member ? member.team : '―'}</td>
+                    <td>${c.contractType}</td>
+                    <td>${fmtDate(c.contractEnd)}</td>
+                    <td class="ct-remaining-alert">${days !== null ? days + '日' : '―'}</td>
+                    <td>${c.clientName || '―'}</td>
+                    <td><button class="ct-edit-btn" data-contract-id="${c.id}">編集</button></td>`;
+                alertBody.appendChild(tr);
+            });
+
+            // 月別アコーディオン
+            renderMonthlyAccordion(activeContracts, s);
+
+            // 全契約一覧
+            renderContractAllTable();
+
+            // チームフィルター選択肢を同期
+            populateCtTeamFilter();
+
+            // 閾値UIを同期
+            document.getElementById('ctAlertDays').value = s.alertDays;
+            document.getElementById('ctWatchDays').value = s.watchDays;
+        }
+
+        function renderMonthlyAccordion(activeContracts, s) {
+            const withEnd = activeContracts.filter(c => c.contractEnd)
+                .sort((a,b) => a.contractEnd.localeCompare(b.contractEnd));
+
+            // 月ごとにグループ化
+            const groups = {};
+            withEnd.forEach(c => {
+                const ym = c.contractEnd.slice(0, 7); // "YYYY-MM"
+                if (!groups[ym]) groups[ym] = [];
+                groups[ym].push(c);
+            });
+
+            const accordion = document.getElementById('ctMonthlyAccordion');
+            accordion.innerHTML = '';
+
+            const sortedMonths = Object.keys(groups).sort();
+            if (sortedMonths.length === 0) {
+                accordion.innerHTML = '<div class="ct-empty-msg">終了日が登録された稼働中の契約がありません</div>';
+                return;
+            }
+
+            sortedMonths.forEach((ym, idx) => {
+                const items = groups[ym];
+                const [y, m] = ym.split('-');
+                const label  = `${y}年${parseInt(m)}月`;
+
+                // バッジ色: alertDays/watchDays は月の最初の日で近いかどうかではなく、月内の最短残日数で判断
+                const minDays = Math.min(...items.map(c => calcRemainingDays(c.contractEnd) ?? 9999));
+                let badgeClass = 'ct-badge-none';
+                if (minDays <= s.alertDays) badgeClass = 'ct-badge-alert';
+                else if (minDays <= s.watchDays) badgeClass = 'ct-badge-watch';
+
+                const headerId = `ctAccHead_${ym}`;
+                const bodyId   = `ctAccBody_${ym}`;
+
+                const header = document.createElement('div');
+                header.className = 'ct-accordion-header';
+                header.dataset.targetBody = bodyId;
+                header.innerHTML = `
+                    <span class="ct-accordion-arrow${idx === 0 ? ' open' : ''}">▶</span>
+                    ${label}
+                    <span class="ct-badge ${badgeClass}">${items.length}件</span>`;
+
+                const body = document.createElement('div');
+                body.className = 'ct-accordion-body';
+                body.id = bodyId;
+                body.style.display = idx === 0 ? '' : 'none';
+
+                const rows = items.map(c => {
+                    const member = getMemberById(c.memberId);
+                    const days   = calcRemainingDays(c.contractEnd);
+                    const level  = getContractAlertLevel(c.contractEnd, s);
+                    const cls    = level === 'alert' ? 'ct-remaining-alert' : level === 'watch' ? 'ct-remaining-watch' : '';
+                    return `<tr>
+                        <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
+                        <td>${member ? member.team : '―'}</td>
+                        <td>${c.contractType}</td>
+                        <td>${fmtDate(c.contractEnd)}</td>
+                        <td class="${cls}">${days !== null ? days + '日' : '―'}</td>
+                        <td>${c.clientName || '―'}</td>
+                        <td><button class="ct-edit-btn" data-contract-id="${c.id}">編集</button></td>
+                    </tr>`;
+                }).join('');
+
+                body.innerHTML = `<div class="ct-table-wrap"><table class="ct-table">
+                    <thead><tr><th>名前</th><th>チーム</th><th>種別</th><th>終了日</th><th>残日数</th><th>客先</th><th></th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table></div>`;
+
+                header.addEventListener('click', () => {
+                    const b = document.getElementById(header.dataset.targetBody);
+                    const arrow = header.querySelector('.ct-accordion-arrow');
+                    const isOpen = b.style.display !== 'none';
+                    b.style.display = isOpen ? 'none' : '';
+                    arrow.classList.toggle('open', !isOpen);
+                });
+
+                accordion.appendChild(header);
+                accordion.appendChild(body);
+            });
+        }
+
+        function renderContractAllTable() {
+            const typeFilter   = document.getElementById('ctFilterType').value;
+            const statusFilter = document.getElementById('ctFilterStatus').value;
+            const teamFilter   = document.getElementById('ctFilterTeam').value;
+
+            const filtered = contracts.filter(c => {
+                if (typeFilter   && c.contractType   !== typeFilter)   return false;
+                if (statusFilter && c.contractStatus !== statusFilter) return false;
+                if (teamFilter) {
+                    const m = getMemberById(c.memberId);
+                    if (!m || m.team !== teamFilter) return false;
+                }
+                return true;
+            }).sort((a,b) => {
+                const ma = getMemberById(a.memberId);
+                const mb = getMemberById(b.memberId);
+                return (ma ? ma.team + ma.name : '').localeCompare(mb ? mb.team + mb.name : '');
+            });
+
+            const tbody = document.getElementById('ctAllBody');
+            tbody.innerHTML = '';
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="ct-empty-msg">該当する契約がありません</td></tr>';
+                return;
+            }
+
+            filtered.forEach(c => {
+                const member = getMemberById(c.memberId);
+                const days   = c.contractStatus === '稼働中' ? calcRemainingDays(c.contractEnd) : null;
+                const level  = (c.contractStatus === '稼働中' && c.contractEnd)
+                    ? getContractAlertLevel(c.contractEnd, contractSettings) : 'none';
+                const daysCls = level === 'alert' ? 'ct-remaining-alert' : level === 'watch' ? 'ct-remaining-watch' : '';
+                const rowCls  = c.contractStatus === '待機中' ? 'ct-row-inactive' : '';
+                const tr = document.createElement('tr');
+                tr.className = rowCls;
+                tr.innerHTML = `
+                    <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
+                    <td>${member ? member.team : '―'}</td>
+                    <td>${c.contractType}</td>
+                    <td>${c.contractStatus}</td>
+                    <td>${fmtDate(c.originalStart)}</td>
+                    <td>${fmtDate(c.contractStart)}</td>
+                    <td>${fmtDate(c.contractEnd)}</td>
+                    <td class="${daysCls}">${days !== null ? days + '日' : '―'}</td>
+                    <td>${c.clientName || '―'}</td>
+                    <td><button class="ct-edit-btn" data-contract-id="${c.id}">編集</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateCtTeamFilter() {
+            const sel = document.getElementById('ctFilterTeam');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">チーム: すべて</option>';
+            TEAMS.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                if (t === current) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
+        // =========================================================
+        // 契約管理：モーダル
+        // =========================================================
+        function openContractModal(contractId) {
+            editingContractId = contractId;
+            const isNew = contractId === null;
+            document.getElementById('ctModalTitle').textContent = isNew ? '契約を追加' : '契約を編集';
+            document.getElementById('ctDeleteBtn').style.display = isNew ? 'none' : '';
+
+            if (isNew) {
+                // メンバーセレクト（既に契約があるメンバーは除外）
+                const usedMemberIds = new Set(contracts.map(c => c.memberId));
+                const sel = document.getElementById('ctMemberSelect');
+                sel.innerHTML = '<option value="">メンバーを選択</option>';
+                members.filter(m => !usedMemberIds.has(m.id)).forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id; opt.textContent = `${m.name}（${m.team}）`;
+                    sel.appendChild(opt);
+                });
+                document.getElementById('ctMemberSelectGroup').style.display = '';
+                document.getElementById('ctMemberTextGroup').style.display   = 'none';
+                document.getElementById('ctContractType').value   = '';
+                document.getElementById('ctContractStatus').value = '稼働中';
+                document.getElementById('ctClientName').value     = '';
+                document.getElementById('ctOriginalStart').value  = '';
+                document.getElementById('ctContractStart').value  = '';
+                document.getElementById('ctContractEnd').value    = '';
+                document.getElementById('ctNote').value           = '';
+            } else {
+                const c = contracts.find(x => x.id === contractId);
+                if (!c) return;
+                const member = getMemberById(c.memberId);
+                document.getElementById('ctMemberSelectGroup').style.display = 'none';
+                document.getElementById('ctMemberTextGroup').style.display   = '';
+                document.getElementById('ctMemberText').textContent = member
+                    ? `${member.name}（${member.team}）` : '（不明）';
+                document.getElementById('ctContractType').value   = c.contractType;
+                document.getElementById('ctContractStatus').value = c.contractStatus;
+                document.getElementById('ctClientName').value     = c.clientName  || '';
+                document.getElementById('ctOriginalStart').value  = c.originalStart || '';
+                document.getElementById('ctContractStart').value  = c.contractStart || '';
+                document.getElementById('ctContractEnd').value    = c.contractEnd   || '';
+                document.getElementById('ctNote').value           = c.note          || '';
+            }
+            document.getElementById('ctModalOverlay').classList.add('visible');
+        }
+
+        function closeContractModal() {
+            document.getElementById('ctModalOverlay').classList.remove('visible');
+            editingContractId = null;
+        }
+
+        function saveContract() {
+            const isNew = editingContractId === null;
+            const type   = document.getElementById('ctContractType').value;
+            const status = document.getElementById('ctContractStatus').value;
+            if (!type)   { alert('種別を選択してください'); return; }
+            if (!status) { alert('ステータスを選択してください'); return; }
+
+            const today = new Date().toISOString().slice(0,10);
+            if (isNew) {
+                const memberId = document.getElementById('ctMemberSelect').value;
+                if (!memberId) { alert('メンバーを選択してください'); return; }
+                const newContract = {
+                    id:             'ct_' + Math.random().toString(36).slice(2,8),
+                    memberId,
+                    contractType:   type,
+                    contractStatus: status,
+                    originalStart:  document.getElementById('ctOriginalStart').value,
+                    contractStart:  document.getElementById('ctContractStart').value,
+                    contractEnd:    document.getElementById('ctContractEnd').value,
+                    clientName:     document.getElementById('ctClientName').value.trim(),
+                    note:           document.getElementById('ctNote').value.trim(),
+                    updated_at:     today
+                };
+                contracts.push(newContract);
+            } else {
+                const idx = contracts.findIndex(x => x.id === editingContractId);
+                if (idx === -1) return;
+                contracts[idx] = {
+                    ...contracts[idx],
+                    contractType:   type,
+                    contractStatus: status,
+                    originalStart:  document.getElementById('ctOriginalStart').value,
+                    contractStart:  document.getElementById('ctContractStart').value,
+                    contractEnd:    document.getElementById('ctContractEnd').value,
+                    clientName:     document.getElementById('ctClientName').value.trim(),
+                    note:           document.getElementById('ctNote').value.trim(),
+                    updated_at:     today
+                };
+            }
+            saveContracts();
+            closeContractModal();
+            renderContractDashboard();
+        }
+
+        function deleteContract() {
+            if (!editingContractId) return;
+            const c = contracts.find(x => x.id === editingContractId);
+            const member = c ? getMemberById(c.memberId) : null;
+            const label  = member ? member.name : `（不明: ${c.memberId}）`;
+            if (!confirm(`「${label}」の契約レコードを削除してもよろしいですか？`)) return;
+            contracts = contracts.filter(x => x.id !== editingContractId);
+            saveContracts();
+            closeContractModal();
+            renderContractDashboard();
+        }
+
+        function onCtThresholdChange() {
+            const alertVal = parseInt(document.getElementById('ctAlertDays').value, 10);
+            const watchVal = parseInt(document.getElementById('ctWatchDays').value, 10);
+            const errEl    = document.getElementById('ctThresholdError');
+            if (isNaN(alertVal) || isNaN(watchVal) || alertVal >= watchVal) {
+                errEl.style.display = '';
+                return;
+            }
+            errEl.style.display = 'none';
+            contractSettings = { alertDays: alertVal, watchDays: watchVal };
+            saveContractSettings();
+            renderContractDashboard();
+        }
+
+        // =========================================================
         // タブ切り替え
         // =========================================================
         function switchTab(tab) {
             const isMonthly   = (tab === 'monthly');
             const isPeriodic  = (tab === 'periodic');
             const isCondition = (tab === 'condition');
-            const isKadou     = !isMonthly && !isPeriodic && !isCondition;
+            const isContract  = (tab === 'contract');
+            const isKadou     = !isMonthly && !isPeriodic && !isCondition && !isContract;
             document.getElementById('kadouSection').style.display     = isKadou     ? '' : 'none';
             document.getElementById('monthlySection').style.display   = isMonthly   ? '' : 'none';
             document.getElementById('periodicSection').style.display  = isPeriodic  ? '' : 'none';
             document.getElementById('conditionSection').style.display = isCondition ? '' : 'none';
+            document.getElementById('contractSection').style.display  = isContract  ? '' : 'none';
             document.getElementById('addMemberBtn').style.display     = isKadou ? '' : 'none';
             document.getElementById('teamExportBtn').style.display    = isKadou ? '' : 'none';
             document.getElementById('teamFilter').style.display       = isKadou ? '' : 'none';
@@ -4810,6 +5639,7 @@
             document.getElementById('tabMonthly').classList.toggle('active',   isMonthly);
             document.getElementById('tabPeriodic').classList.toggle('active',  isPeriodic);
             document.getElementById('tabCondition').classList.toggle('active', isCondition);
+            document.getElementById('tabContract').classList.toggle('active',  isContract);
 
             if (isMonthly) {
                 currentYearMonth = getCurrentYearMonth();
@@ -4825,6 +5655,9 @@
                 initCsThresholdUI();
                 initCsApiTokenUI();
                 renderConditionSignal();
+            }
+            if (isContract) {
+                renderContractDashboard();
             }
         }
 
@@ -5362,6 +6195,8 @@
             await saveMembers();
             cleanupDeletedMemberLocalStorage(m.id);
             removePeriodicTasksForMember(m.id);
+            contracts = contracts.filter(x => x.memberId !== m.id);
+            saveContracts();
             renderTable();
             renderPeriodicTaskTable();
             closeModal();
@@ -5376,6 +6211,32 @@
             document.getElementById('tabMonthly').addEventListener('click',   () => switchTab('monthly'));
             document.getElementById('tabPeriodic').addEventListener('click',  () => switchTab('periodic'));
             document.getElementById('tabCondition').addEventListener('click', () => switchTab('condition'));
+            document.getElementById('tabContract').addEventListener('click',  () => switchTab('contract'));
+            // 契約管理
+            document.getElementById('ctAlertDays').addEventListener('input', onCtThresholdChange);
+            document.getElementById('ctWatchDays').addEventListener('input', onCtThresholdChange);
+            document.getElementById('ctAddBtn').addEventListener('click', () => openContractModal(null));
+            document.getElementById('ctSaveBtn').addEventListener('click', saveContract);
+            document.getElementById('ctCancelBtn').addEventListener('click', closeContractModal);
+            document.getElementById('ctDeleteBtn').addEventListener('click', deleteContract);
+            document.getElementById('ctModalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('ctModalOverlay')) closeContractModal();
+            });
+            document.getElementById('ctFilterType').addEventListener('change', renderContractAllTable);
+            document.getElementById('ctFilterStatus').addEventListener('change', renderContractAllTable);
+            document.getElementById('ctFilterTeam').addEventListener('change', renderContractAllTable);
+            document.getElementById('ctAlertBody').addEventListener('click', e => {
+                const btn = e.target.closest('[data-contract-id]');
+                if (btn) openContractModal(btn.dataset.contractId);
+            });
+            document.getElementById('ctAllBody').addEventListener('click', e => {
+                const btn = e.target.closest('[data-contract-id]');
+                if (btn) openContractModal(btn.dataset.contractId);
+            });
+            document.getElementById('ctMonthlyAccordion').addEventListener('click', e => {
+                const btn = e.target.closest('[data-contract-id]');
+                if (btn) openContractModal(btn.dataset.contractId);
+            });
             // コンディションシグナル
             document.getElementById('csApiRunBtn').addEventListener('click', onCsApiRunClick);
             document.getElementById('csCurrentFile').addEventListener('change', onCsCurrentFileChange);
@@ -5481,6 +6342,7 @@
                     closeMonthlyDraftModal();
                     closePeriodicPeriodModal();
                     closePeriodicExportModal();
+                    closeContractModal();
                 }
                 if (e.ctrlKey && e.key === 'Enter') {
                     if (document.getElementById('modalOverlay').classList.contains('visible'))        saveMember();
