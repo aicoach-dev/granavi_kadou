@@ -2073,6 +2073,11 @@
     <div id="contractSection" style="display:none">
         <div class="main-container">
 
+            <!-- 手動更新ボタン -->
+            <div style="text-align:right;margin-bottom:0.5rem;">
+                <button class="cs-run-btn" id="ctRefreshBtn">🔄 契約データを更新</button>
+            </div>
+
             <!-- サマリーバー -->
             <div class="ct-summary-bar" id="ctSummaryBar">
                 <div class="ct-stat">
@@ -5650,6 +5655,14 @@
             renderContractDashboard();
         }
 
+        async function onCtRefreshClick() {
+            const btn = document.getElementById('ctRefreshBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '更新中...'; }
+            await loadContractsFromGAS();
+            renderContractDashboard();
+            if (btn) { btn.disabled = false; btn.textContent = '🔄 契約データを更新'; }
+        }
+
         function onCtThresholdChange() {
             const alertVal = parseInt(document.getElementById('ctAlertDays').value, 10);
             const watchVal = parseInt(document.getElementById('ctWatchDays').value, 10);
@@ -6261,6 +6274,7 @@
             document.getElementById('tabCondition').addEventListener('click', () => switchTab('condition'));
             document.getElementById('tabContract').addEventListener('click',  () => switchTab('contract'));
             // 契約管理
+            document.getElementById('ctRefreshBtn').addEventListener('click', onCtRefreshClick);
             document.getElementById('ctAlertDays').addEventListener('input', onCtThresholdChange);
             document.getElementById('ctWatchDays').addEventListener('input', onCtThresholdChange);
             document.getElementById('ctAddBtn').addEventListener('click', () => openContractModal(null));
