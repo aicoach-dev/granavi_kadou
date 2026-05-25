@@ -2907,7 +2907,7 @@
             setInterval(updateFetchStatus, 60000);
             setInterval(updateMonthlyFetchStatus, 60000);
 
-            await Promise.all([loadMembers(), loadMonthlyRecords()]);
+            await Promise.all([loadMembers(), loadMonthlyRecords(), loadContractsFromGAS()]);
 
             if (members.length === 0) {
                 members = getSampleData();
@@ -2921,7 +2921,6 @@
 
             recipientSettings = loadRecipientSettings();
             periodicTasksState = loadPeriodicTasks();
-            loadContracts();
             loadContractSettings();
             syncPeriodicTasksWithMembers();
             populateTeamSelects();
@@ -5270,6 +5269,52 @@
             try { localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts)); } catch(e) {}
         }
 
+        async function loadContractsFromGAS() {
+            loadContracts();
+            try {
+                ['ctAlertCount','ctWatchCount','ctTotalCount','ctInactiveCount','ctNoEndCount']
+                    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '…'; });
+                const res  = await fetch(`${GAS_URL}?key=${CONTRACTS_KEY}`);
+                const data = await res.json();
+                if (data.value) {
+                    const parsed = JSON.parse(data.value);
+                    contracts = Array.isArray(parsed) ? parsed : [];
+                    localStorage.setItem(CONTRACTS_KEY, JSON.stringify(contracts));
+                }
+            } catch (e) {
+                console.warn('契約データGAS取得失敗。ローカルキャッシュで継続します。', e);
+            }
+        }
+
+        async function saveContractsToGAS() {
+            const saveBtn = document.getElementById('ctSaveBtn');
+            if (saveBtn) saveBtn.disabled = true;
+            try {
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ key: CONTRACTS_KEY, value: JSON.stringify(contracts) })
+                });
+            } catch (e) {
+                showContractGasError('契約データのGAS保存に失敗しました。ローカルの変更は保持されています。');
+            } finally {
+                if (saveBtn) saveBtn.disabled = false;
+            }
+        }
+
+        function showContractGasError(msg) {
+            let el = document.getElementById('ctGasErrorToast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'ctGasErrorToast';
+                el.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#c0392b;color:#fff;padding:10px 16px;border-radius:4px;font-size:13px;z-index:9999;display:none;';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.style.display = '';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
         function loadContractSettings() {
             try {
                 const raw = localStorage.getItem(CONTRACT_SETTINGS_KEY);
@@ -5547,7 +5592,7 @@
             editingContractId = null;
         }
 
-        function saveContract() {
+        async function saveContract() {
             const isNew = editingContractId === null;
             const type   = document.getElementById('ctContractType').value;
             const status = document.getElementById('ctContractStatus').value;
@@ -5587,11 +5632,12 @@
                 };
             }
             saveContracts();
+            await saveContractsToGAS();
             closeContractModal();
             renderContractDashboard();
         }
 
-        function deleteContract() {
+        async function deleteContract() {
             if (!editingContractId) return;
             const c = contracts.find(x => x.id === editingContractId);
             const member = c ? getMemberById(c.memberId) : null;
@@ -5599,6 +5645,7 @@
             if (!confirm(`「${label}」の契約レコードを削除してもよろしいですか？`)) return;
             contracts = contracts.filter(x => x.id !== editingContractId);
             saveContracts();
+            await saveContractsToGAS();
             closeContractModal();
             renderContractDashboard();
         }
@@ -6197,6 +6244,7 @@
             removePeriodicTasksForMember(m.id);
             contracts = contracts.filter(x => x.memberId !== m.id);
             saveContracts();
+            await saveContractsToGAS();
             renderTable();
             renderPeriodicTaskTable();
             closeModal();
