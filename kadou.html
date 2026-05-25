@@ -2195,7 +2195,7 @@
                     <div class="ct-static-text" id="ctMemberText"></div>
                 </div>
                 <div class="ct-form-group">
-                    <label>種別 *</label>
+                    <label>種別 <span id="ctTypeRequired">*</span></label>
                     <select id="ctContractType">
                         <option value="">選択してください</option>
                         <option value="派遣">派遣</option>
@@ -5379,7 +5379,7 @@
                 tr.innerHTML = `
                     <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
                     <td>${member ? member.team : '―'}</td>
-                    <td>${c.contractType}</td>
+                    <td>${c.contractType || '―'}</td>
                     <td>${fmtDate(c.contractEnd)}</td>
                     <td class="ct-remaining-alert">${days !== null ? days + '日' : '―'}</td>
                     <td>${c.clientName || '―'}</td>
@@ -5457,7 +5457,7 @@
                     return `<tr>
                         <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
                         <td>${member ? member.team : '―'}</td>
-                        <td>${c.contractType}</td>
+                        <td>${c.contractType || '―'}</td>
                         <td>${fmtDate(c.contractEnd)}</td>
                         <td class="${cls}">${days !== null ? days + '日' : '―'}</td>
                         <td>${c.clientName || '―'}</td>
@@ -5521,7 +5521,7 @@
                 tr.innerHTML = `
                     <td>${member ? member.name : `（不明: ${c.memberId}）`}</td>
                     <td>${member ? member.team : '―'}</td>
-                    <td>${c.contractType}</td>
+                    <td>${c.contractType || '―'}</td>
                     <td>${c.contractStatus}</td>
                     <td>${fmtDate(c.originalStart)}</td>
                     <td>${fmtDate(c.contractStart)}</td>
@@ -5589,7 +5589,14 @@
                 document.getElementById('ctContractEnd').value    = c.contractEnd   || '';
                 document.getElementById('ctNote').value           = c.note          || '';
             }
+            onCtStatusChange();
             document.getElementById('ctModalOverlay').classList.add('visible');
+        }
+
+        function onCtStatusChange() {
+            const isWaiting = document.getElementById('ctContractStatus').value === '待機中';
+            const el = document.getElementById('ctTypeRequired');
+            if (el) el.style.display = isWaiting ? 'none' : '';
         }
 
         function closeContractModal() {
@@ -5601,7 +5608,7 @@
             const isNew = editingContractId === null;
             const type   = document.getElementById('ctContractType').value;
             const status = document.getElementById('ctContractStatus').value;
-            if (!type)   { alert('種別を選択してください'); return; }
+            if (!type && status !== '待機中') { alert('種別を選択してください'); return; }
             if (!status) { alert('ステータスを選択してください'); return; }
 
             const today = new Date().toISOString().slice(0,10);
@@ -6275,6 +6282,7 @@
             document.getElementById('tabContract').addEventListener('click',  () => switchTab('contract'));
             // 契約管理
             document.getElementById('ctRefreshBtn').addEventListener('click', onCtRefreshClick);
+            document.getElementById('ctContractStatus').addEventListener('change', onCtStatusChange);
             document.getElementById('ctAlertDays').addEventListener('input', onCtThresholdChange);
             document.getElementById('ctWatchDays').addEventListener('input', onCtThresholdChange);
             document.getElementById('ctAddBtn').addEventListener('click', () => openContractModal(null));
