@@ -48,7 +48,7 @@
 ```
 granavi_kadou/
 ├── kadou.html   # メインアプリ（全機能を1ファイルに集約）
-├── AGENTS.md    # Codex向け実装制約・方針
+├── agents.md    # Codex向け実装制約・方針
 └── MEMO.md      # 本ファイル
 ```
 
