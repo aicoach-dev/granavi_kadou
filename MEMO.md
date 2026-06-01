@@ -27,8 +27,8 @@
 | 項目 | 値 |
 |------|----|
 | エンドポイントURL | https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec |
-| スプレッドシートID | （要確認） |
-| GASプロジェクト名 | （要確認） |
+| スプレッドシートID | 1NGsBsH0cG-e77udez4DPr6u-wMC-zFkzl2o0W8hD7o0 |
+| GASプロジェクト名 | 無題のプロジェクト |
 | スプレッドシート名 | granavi_kadou_db |
 
 ### localStorage キー一覧
@@ -90,7 +90,7 @@ git push
 
 ### 6. 既知の不具合と解決済み対応
 
-（要確認：ユーザーが記載内容を確認・追記してください）
+現時点で既知の不具合はありません。
 
 ---
 
