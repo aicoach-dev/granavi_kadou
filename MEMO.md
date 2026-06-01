@@ -1,4 +1,58 @@
-# granavi_kadou 運用メモ
+# グラナビ稼働（granavi_kadou）MEMO
+
+## 1. プロジェクト概要
+
+- **プロダクト名**：グラナビ稼働（granavi_kadou）
+- **目的**：エンジニアの稼働・フォロー状態を見える化し、
+  管理者・リーダーが必要なフォローに気づけるようにする
+- **解決した課題**：稼働一覧・月次実績・定期タスクの状態を
+  1画面で確認できなかった問題を解消
+- **グラナビシリーズ内の位置づけ**：
+  グラナビ契約（granavi_contract）と並行して運用する
+  エンジニア稼働管理ツール。
+  将来的にグラナビ契約の HakkenActive との連携候補。
+
+---
+
+## 2. インフラ設定値
+
+### GitHub
+| 項目 | 値 |
+|------|----|
+| リポジトリURL | https://github.com/aicoach-dev/granavi_kadou |
+| ローカルパス | C:\Users\kochi\Documents\GraNavi\granavi_kadou |
+| GitHub Pages URL | https://aicoach-dev.github.io/granavi_kadou/kadou.html |
+
+### GAS
+| 項目 | 値 |
+|------|----|
+| エンドポイントURL | https://script.google.com/macros/s/AKfycbwNPFUL3t562swqlSxsGnovTyIZS_I3HC3tzby0Sl-QZ1E5obQ8aevPJ97qUfqVhHxC/exec |
+| スプレッドシートID | （要確認） |
+| GASプロジェクト名 | （要確認） |
+| スプレッドシート名 | granavi_kadou_db |
+
+### localStorage キー一覧
+| キー名 | 用途 |
+|--------|------|
+| kadou_v2 | メンバーデータ（GAS保存失敗時バックアップ） |
+| kadou_monthly_v1 | 月次実績データ |
+| kadou_test_base_date | テスト基準日オーバーライド |
+| kadou_recipient_settings | チーム別宛先設定 |
+| kadou_recipient_mode | 宛先モード（test / prod） |
+| granavi_periodicTasks | 定期タスク確認の期間ラベルと状態 |
+
+---
+
+## 3. ファイル構成
+
+```
+granavi_kadou/
+├── kadou.html   # メインアプリ（全機能を1ファイルに集約）
+├── AGENTS.md    # Codex向け実装制約・方針
+└── MEMO.md      # 本ファイル
+```
+
+---
 
 ### 4. デプロイ手順
 
