@@ -1781,6 +1781,21 @@
             cursor: pointer;
         }
         .ct-modal-footer .ct-delete-btn:hover { background: #fee2e2; }
+        .ct-confirm-select {
+            font-size: 12px;
+            padding: 3px 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #fff;
+        }
+        .ct-confirm-note {
+            font-size: 11px;
+            padding: 3px 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 120px;
+        }
     </style>
 </head>
 <body>
@@ -2127,7 +2142,7 @@
                     <table class="ct-table">
                         <thead><tr>
                             <th>名前</th><th>チーム</th><th>種別</th><th>終了日</th>
-                            <th>残日数</th><th>客先</th><th></th>
+                            <th>残日数</th><th>客先</th><th>確認状況</th><th>メモ</th><th></th>
                         </tr></thead>
                         <tbody id="ctAlertBody"></tbody>
                     </table>
@@ -5310,6 +5325,15 @@
             }
         }
 
+        async function saveContractConfirmStatus(contractId, newStatus, newNote) {
+            const idx = contracts.findIndex(c => c.id === contractId);
+            if (idx === -1) return;
+            contracts[idx].confirmStatus = newStatus;
+            if (newNote !== undefined) contracts[idx].confirmNote = newNote;
+            saveContracts();
+            await saveContractsToGAS();
+        }
+
         function showContractGasError(msg) {
             let el = document.getElementById('ctGasErrorToast');
             if (!el) {
@@ -5387,6 +5411,17 @@
                     <td>${fmtDate(c.contractEnd)}</td>
                     <td class="ct-remaining-alert">${days !== null ? days + '日' : '―'}</td>
                     <td>${c.clientName || '―'}</td>
+                    <td>
+                      <select class="ct-confirm-select" data-contract-id="${c.id}">
+                        <option value="unknown"   ${(!c.confirmStatus || c.confirmStatus==='unknown')    ? 'selected':''}>― 未確認</option>
+                        <option value="renew"     ${c.confirmStatus==='renew'      ? 'selected':''}>更新確定</option>
+                        <option value="end"       ${c.confirmStatus==='end'        ? 'selected':''}>終了確定</option>
+                        <option value="likely_end"${c.confirmStatus==='likely_end' ? 'selected':''}>終了見込み</option>
+                        <option value="caution"   ${c.confirmStatus==='caution'    ? 'selected':''}>要注意</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="ct-confirm-note" data-contract-id="${c.id}"
+                      value="${c.confirmNote||''}" placeholder="メモ"></td>
                     <td><button class="ct-edit-btn" data-contract-id="${c.id}">編集</button></td>`;
                 alertBody.appendChild(tr);
             });
@@ -6300,9 +6335,23 @@
             document.getElementById('ctFilterStatus').addEventListener('change', renderContractAllTable);
             document.getElementById('ctFilterTeam').addEventListener('change', renderContractAllTable);
             document.getElementById('ctAlertBody').addEventListener('click', e => {
-                const btn = e.target.closest('[data-contract-id]');
+                const btn = e.target.closest('.ct-edit-btn[data-contract-id]');
                 if (btn) openContractModal(btn.dataset.contractId);
             });
+            document.getElementById('ctAlertBody').addEventListener('change', async e => {
+                if (e.target.classList.contains('ct-confirm-select')) {
+                    const id   = e.target.dataset.contractId;
+                    const note = e.target.closest('tr').querySelector('.ct-confirm-note').value;
+                    await saveContractConfirmStatus(id, e.target.value, note);
+                }
+            });
+            document.getElementById('ctAlertBody').addEventListener('blur', async e => {
+                if (e.target.classList.contains('ct-confirm-note')) {
+                    const id     = e.target.dataset.contractId;
+                    const select = e.target.closest('tr').querySelector('.ct-confirm-select');
+                    await saveContractConfirmStatus(id, select.value, e.target.value);
+                }
+            }, true);
             document.getElementById('ctAllBody').addEventListener('click', e => {
                 const btn = e.target.closest('[data-contract-id]');
                 if (btn) openContractModal(btn.dataset.contractId);
