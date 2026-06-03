@@ -2949,7 +2949,7 @@
             updateRecipientModeUI();
             renderTable();
             // ハッシュによる初期タブ指定（リーダーポータルからの直接リンク用）
-            const hashMap = { monthly: 'monthly', periodic: 'periodic' };
+            const hashMap = { monthly: 'monthly', periodic: 'periodic', contract: 'contract' };
             const hashVal = location.hash.replace('#tab=', '');
             if (hashMap[hashVal]) switchTab(hashMap[hashVal]);
         }
