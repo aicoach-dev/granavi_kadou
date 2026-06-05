@@ -2850,7 +2850,7 @@
             // saveはschedulePeriodicSave経由に一本化
         }
 
-        function removePeriodicTasksForMember(memberId) {
+        async function removePeriodicTasksForMember(memberId) {
             if (!periodicTasksState || !memberId || !periodicTasksState.taskStates || !periodicTasksState.taskStates[memberId]) return;
             const nextTaskStates = { ...periodicTasksState.taskStates };
             delete nextTaskStates[memberId];
@@ -2858,7 +2858,7 @@
                 ...periodicTasksState,
                 taskStates: nextTaskStates
             };
-            savePeriodicTasks();
+            await savePeriodicTasks();
         }
 
         function getPeriodicMembers(viewTaskStates) {
