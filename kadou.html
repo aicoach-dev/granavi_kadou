@@ -165,6 +165,16 @@
             white-space: nowrap;
         }
 
+        .periodic-readonly-banner {
+            background: #fff8e1;
+            border: 1px solid #f9a825;
+            border-radius: 6px;
+            padding: 8px 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #6d4c00;
+        }
+
         .periodic-reset-warning {
             margin-top: 0.875rem;
             padding: 0.75rem 0.875rem;
@@ -1931,7 +1941,8 @@
                     <button class="subtle-action-btn" id="periodicIncompleteToggleBtn">未のみ表示: OFF</button>
                 </div>
                 <div class="periodic-controls-right">
-                    <span class="periodic-period-display">対象期間: <span id="periodicPeriodLabel">2026上期</span></span>
+                    <span class="periodic-period-display">対象期間:</span>
+                    <select class="team-filter" id="periodicPeriodSelect"></select>
                     <button class="subtle-action-btn" id="periodicPeriodChangeBtn">期間変更</button>
                     <button class="subtle-action-btn" id="periodicExportBtn">未完了者リスト生成</button>
                 </div>
@@ -2592,6 +2603,7 @@
         const RECIPIENT_MODE_KEY = 'kadou_recipient_mode';
         const PERIODIC_TASKS_KEY = 'granavi_periodicTasks';
         const PERIODIC_DEFAULT_PERIOD_LABEL = '2026下期';
+        const PERIODIC_LOCAL_CACHE_KEY = 'granavi_periodicTasks_cache';
         const PERIODIC_TASK_ITEMS = ['スキルシート更新', 'スキルマトリクス更新', 'CS調査回収', '目標設定／更新', '成長ポイント記入'];
         const PERIODIC_TASK_STATUS_ORDER = ['未', '済', '対象外'];
         const MEMBER_LOCAL_STORAGE_KEY_PREFIXES = [];
@@ -2627,6 +2639,9 @@
         let recipientSettings      = {};
         let periodicTasksState     = null;
         let periodicHideCompletedOnly = false;
+        let periodicLastLoadedAt        = null;
+        let periodicLoadFailed          = false;
+        let periodicViewingHistoryIndex = null;
 
         function getRandomAlphaNumeric(length = 10) {
             const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -2705,8 +2720,10 @@
 
         function getDefaultPeriodicTasksState() {
             return {
-                periodLabel: PERIODIC_DEFAULT_PERIOD_LABEL,
-                taskStates: {}
+                currentPeriodLabel: PERIODIC_DEFAULT_PERIOD_LABEL,
+                taskStates: {},
+                history: [],
+                updated_at: null
             };
         }
 
@@ -2719,40 +2736,98 @@
             return defaults;
         }
 
-        function loadPeriodicTasks() {
-            const defaults = getDefaultPeriodicTasksState();
+        async function loadPeriodicTasks() {
+            periodicLoadFailed = false;
             try {
-                const raw = localStorage.getItem(PERIODIC_TASKS_KEY);
-                if (!raw) return defaults;
-                const parsed = JSON.parse(raw);
-                const sourceTaskStates = parsed && typeof parsed === 'object' && parsed.taskStates && typeof parsed.taskStates === 'object'
-                    ? parsed.taskStates
-                    : {};
-                const taskStates = Object.keys(sourceTaskStates).reduce((acc, memberId) => {
-                    acc[memberId] = normalizePeriodicMemberTaskStates(sourceTaskStates[memberId]);
-                    return acc;
-                }, {});
-                return {
-                    periodLabel: String(parsed && parsed.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL).trim() || PERIODIC_DEFAULT_PERIOD_LABEL,
-                    taskStates
-                };
-            } catch (e) {
-                return defaults;
+                const res  = await fetch(`${GAS_URL}?key=${PERIODIC_TASKS_KEY}`);
+                const data = await res.json();
+
+                let parsed = null;
+                if (data.value) {
+                    try { parsed = JSON.parse(data.value); } catch(e) {}
+                }
+
+                if (!parsed || typeof parsed !== 'object') {
+                    periodicTasksState = getDefaultPeriodicTasksState();
+                } else {
+                    if (!parsed.currentPeriodLabel && parsed.periodLabel) {
+                        parsed.currentPeriodLabel = parsed.periodLabel;
+                        delete parsed.periodLabel;
+                    }
+                    if (!Array.isArray(parsed.history)) parsed.history = [];
+
+                    const sourceTaskStates = parsed.taskStates && typeof parsed.taskStates === 'object'
+                        ? parsed.taskStates : {};
+                    const taskStates = Object.keys(sourceTaskStates).reduce((acc, memberId) => {
+                        acc[memberId] = normalizePeriodicMemberTaskStates(sourceTaskStates[memberId]);
+                        return acc;
+                    }, {});
+
+                    periodicTasksState = {
+                        currentPeriodLabel: String(parsed.currentPeriodLabel || PERIODIC_DEFAULT_PERIOD_LABEL).trim(),
+                        taskStates,
+                        history:    parsed.history,
+                        updated_at: parsed.updated_at || null
+                    };
+                }
+
+                periodicLastLoadedAt = periodicTasksState.updated_at;
+
+                try {
+                    localStorage.setItem(PERIODIC_LOCAL_CACHE_KEY, JSON.stringify(periodicTasksState));
+                } catch(e) {}
+
+            } catch(e) {
+                console.warn('定期タスクGAS取得失敗。localStorageキャッシュで継続します。', e);
+                periodicLoadFailed = true;
+
+                try {
+                    const raw = localStorage.getItem(PERIODIC_LOCAL_CACHE_KEY);
+                    periodicTasksState = raw ? JSON.parse(raw) : getDefaultPeriodicTasksState();
+                } catch(e2) {
+                    periodicTasksState = getDefaultPeriodicTasksState();
+                }
             }
         }
 
-        function savePeriodicTasks() {
-            if (!periodicTasksState) return;
+        async function savePeriodicTasks() {
+            if (!periodicTasksState) return false;
+
+            if (periodicLoadFailed) {
+                console.warn('[periodic] GAS未取得のため保存をスキップ');
+                return false;
+            }
+
+            const payload = {
+                ...periodicTasksState,
+                updated_at: new Date().toISOString()
+            };
+
             try {
-                localStorage.setItem(PERIODIC_TASKS_KEY, JSON.stringify(periodicTasksState));
-            } catch (e) {
-                // ignore localStorage failures
+                const res = await fetch(GAS_URL, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body:    JSON.stringify({ key: PERIODIC_TASKS_KEY, value: JSON.stringify(payload) })
+                });
+                if (!res.ok) throw new Error(`periodic save failed: ${res.status}`);
+
+                periodicTasksState   = payload;
+                periodicLastLoadedAt = payload.updated_at;
+
+                try {
+                    localStorage.setItem(PERIODIC_LOCAL_CACHE_KEY, JSON.stringify(periodicTasksState));
+                } catch(e) {}
+
+                return true;
+            } catch(e) {
+                console.error('定期タスク保存失敗', e);
+                return false;
             }
         }
 
         function syncPeriodicTasksWithMembers() {
             if (!periodicTasksState) {
-                periodicTasksState = loadPeriodicTasks();
+                periodicTasksState = getDefaultPeriodicTasksState();
             }
             let changed = false;
             const nextTaskStates = { ...(periodicTasksState.taskStates || {}) };
@@ -2766,8 +2841,10 @@
                 }
             });
             periodicTasksState = {
-                periodLabel: periodicTasksState.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL,
-                taskStates: nextTaskStates
+                currentPeriodLabel: periodicTasksState.currentPeriodLabel || PERIODIC_DEFAULT_PERIOD_LABEL,
+                taskStates: nextTaskStates,
+                history:    periodicTasksState.history || [],
+                updated_at: periodicTasksState.updated_at || null
             };
             if (changed) savePeriodicTasks();
         }
@@ -2783,14 +2860,17 @@
             savePeriodicTasks();
         }
 
-        function getPeriodicMembers() {
-            syncPeriodicTasksWithMembers();
+        function getPeriodicMembers(viewTaskStates) {
+            const taskStatesSource = (viewTaskStates !== undefined && viewTaskStates !== null)
+                ? viewTaskStates
+                : (periodicTasksState && periodicTasksState.taskStates) || {};
+
             const filterVal = document.getElementById('periodicTeamFilter').value;
             return sortMembers(members.filter(member => {
                 if (filterVal && member.team !== filterVal) return false;
                 if (!periodicHideCompletedOnly) return true;
-                const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
-                return PERIODIC_TASK_ITEMS.some(taskName => taskStates[taskName] === '未');
+                const ts = taskStatesSource[member.id] || getDefaultPeriodicTaskValues();
+                return PERIODIC_TASK_ITEMS.some(taskName => ts[taskName] === '未');
             }));
         }
 
@@ -2801,19 +2881,74 @@
         }
 
         function updatePeriodicControls() {
-            document.getElementById('periodicPeriodLabel').textContent = periodicTasksState && periodicTasksState.periodLabel
-                ? periodicTasksState.periodLabel
-                : PERIODIC_DEFAULT_PERIOD_LABEL;
-            document.getElementById('periodicIncompleteToggleBtn').textContent = `未のみ表示: ${periodicHideCompletedOnly ? 'ON' : 'OFF'}`;
+            const select = document.getElementById('periodicPeriodSelect');
+            if (!select) return;
+
+            const history      = (periodicTasksState && periodicTasksState.history) || [];
+            const currentLabel = (periodicTasksState && periodicTasksState.currentPeriodLabel)
+                || PERIODIC_DEFAULT_PERIOD_LABEL;
+
+            select.innerHTML = '';
+
+            const currentOpt = document.createElement('option');
+            currentOpt.value = 'current';
+            currentOpt.textContent = currentLabel + '（現在）';
+            select.appendChild(currentOpt);
+
+            [...history].reverse().forEach((h, reversedIdx) => {
+                const realIdx = history.length - 1 - reversedIdx;
+                const opt = document.createElement('option');
+                opt.value = String(realIdx);
+                opt.textContent = h.periodLabel;
+                select.appendChild(opt);
+            });
+
+            select.value = periodicViewingHistoryIndex === null
+                ? 'current' : String(periodicViewingHistoryIndex);
+
+            const changeBtn = document.getElementById('periodicPeriodChangeBtn');
+            if (changeBtn) {
+                changeBtn.disabled      = periodicViewingHistoryIndex !== null;
+                changeBtn.style.opacity = periodicViewingHistoryIndex !== null ? '0.4' : '';
+            }
+
+            document.getElementById('periodicIncompleteToggleBtn').textContent =
+                `未のみ表示: ${periodicHideCompletedOnly ? 'ON' : 'OFF'}`;
         }
 
         function renderPeriodicTaskTable() {
             const tbody = document.getElementById('periodicTaskTableBody');
             if (!tbody) return;
-            syncPeriodicTasksWithMembers();
+
+            const isReadOnly = periodicViewingHistoryIndex !== null;
+
+            if (!isReadOnly) {
+                syncPeriodicTasksWithMembers();
+            }
+
             updatePeriodicControls();
-            const visibleMembers = getPeriodicMembers();
-            const hiddenCount = members.length - visibleMembers.length;
+
+            let banner = document.getElementById('periodicReadOnlyBanner');
+            if (isReadOnly) {
+                const h = (periodicTasksState.history || [])[periodicViewingHistoryIndex];
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'periodicReadOnlyBanner';
+                    banner.className = 'periodic-readonly-banner';
+                    const summary = document.getElementById('periodicSummary');
+                    summary.parentNode.insertBefore(banner, summary);
+                }
+                banner.textContent = `📋 ${h ? h.periodLabel : '過去期間'} を表示中（読み取り専用）`;
+            } else {
+                if (banner) banner.remove();
+            }
+
+            const viewTaskStates = isReadOnly
+                ? (((periodicTasksState.history || [])[periodicViewingHistoryIndex] || {}).taskStates || {})
+                : periodicTasksState.taskStates;
+
+            const visibleMembers = getPeriodicMembers(viewTaskStates);
+            const hiddenCount    = members.length - visibleMembers.length;
             document.getElementById('periodicSummary').textContent = periodicHideCompletedOnly
                 ? `表示: ${visibleMembers.length}名　｜　非表示: ${hiddenCount}名`
                 : `表示: ${visibleMembers.length}名`;
@@ -2824,13 +2959,14 @@
             }
 
             tbody.innerHTML = visibleMembers.map(member => {
-                const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
+                const taskStates = viewTaskStates[member.id] || getDefaultPeriodicTaskValues();
                 const cells = PERIODIC_TASK_ITEMS.map(taskName => {
                     const status = taskStates[taskName] || '未';
+                    const disabledAttr = isReadOnly ? ' disabled' : '';
                     return `<td class="periodic-status-cell">
                         <button type="button" class="periodic-status-btn ${getPeriodicStatusClass(status)}"
                                 data-member-id="${escHtml(member.id)}"
-                                data-task-name="${escHtml(taskName)}">${escHtml(status)}</button>
+                                data-task-name="${escHtml(taskName)}"${disabledAttr}>${escHtml(status)}</button>
                     </td>`;
                 }).join('');
                 return `<tr>
@@ -2842,27 +2978,49 @@
         }
 
         function togglePeriodicTaskStatus(memberId, taskName) {
+            if (periodicViewingHistoryIndex !== null) return;
+
             syncPeriodicTasksWithMembers();
             const currentState = normalizePeriodicMemberTaskStates(periodicTasksState.taskStates[memberId]);
             const currentIndex = PERIODIC_TASK_STATUS_ORDER.indexOf(currentState[taskName]);
-            const nextStatus = PERIODIC_TASK_STATUS_ORDER[(currentIndex + 1) % PERIODIC_TASK_STATUS_ORDER.length];
+            const nextStatus   = PERIODIC_TASK_STATUS_ORDER[(currentIndex + 1) % PERIODIC_TASK_STATUS_ORDER.length];
+
+            const prevState = JSON.parse(JSON.stringify(periodicTasksState));
             periodicTasksState = {
                 ...periodicTasksState,
                 taskStates: {
                     ...periodicTasksState.taskStates,
-                    [memberId]: {
-                        ...currentState,
-                        [taskName]: nextStatus
-                    }
+                    [memberId]: { ...currentState, [taskName]: nextStatus }
                 }
             };
-            savePeriodicTasks();
             renderPeriodicTaskTable();
+
+            savePeriodicTasks().then(ok => {
+                if (ok === false) {
+                    periodicTasksState = prevState;
+                    renderPeriodicTaskTable();
+                    showPeriodicGasError('保存に失敗しました。通信状態を確認してください。');
+                }
+            });
+        }
+
+        function showPeriodicGasError(msg) {
+            let el = document.getElementById('periodicGasErrorToast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'periodicGasErrorToast';
+                el.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#c0392b;color:#fff;padding:10px 16px;border-radius:4px;font-size:13px;z-index:9999;display:none;';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.style.display = '';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 5000);
         }
 
         function openPeriodicPeriodModal() {
             syncPeriodicTasksWithMembers();
-            document.getElementById('periodicPeriodInput').value = periodicTasksState.periodLabel || PERIODIC_DEFAULT_PERIOD_LABEL;
+            document.getElementById('periodicPeriodInput').value = periodicTasksState.currentPeriodLabel || PERIODIC_DEFAULT_PERIOD_LABEL;
             document.getElementById('periodicPeriodModalOverlay').classList.add('visible');
             setTimeout(() => document.getElementById('periodicPeriodInput').focus(), 50);
         }
@@ -2871,30 +3029,70 @@
             document.getElementById('periodicPeriodModalOverlay').classList.remove('visible');
         }
 
-        function applyPeriodicPeriodReset() {
-            const nextLabel = String(document.getElementById('periodicPeriodInput').value || '').trim() || PERIODIC_DEFAULT_PERIOD_LABEL;
+        async function applyPeriodicPeriodReset() {
+            if (periodicLoadFailed) {
+                showPeriodicGasError('データ取得に失敗中のため期間変更できません。ページを更新してください。');
+                return;
+            }
+
+            const btn = document.getElementById('periodicPeriodSaveBtn');
+            if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+
+            const nextLabel = String(document.getElementById('periodicPeriodInput').value || '').trim()
+                || PERIODIC_DEFAULT_PERIOD_LABEL;
+
+            const prevState = JSON.parse(JSON.stringify(periodicTasksState));
+
+            const snapshot = {
+                periodLabel: periodicTasksState.currentPeriodLabel || PERIODIC_DEFAULT_PERIOD_LABEL,
+                taskStates:  JSON.parse(JSON.stringify(periodicTasksState.taskStates || {}))
+            };
+            const newHistory = [...(periodicTasksState.history || []), snapshot];
+
             const nextTaskStates = {};
             members.forEach(member => {
                 if (!member || !member.id) return;
                 nextTaskStates[member.id] = getDefaultPeriodicTaskValues();
             });
+
             periodicTasksState = {
-                periodLabel: nextLabel,
-                taskStates: nextTaskStates
+                currentPeriodLabel: nextLabel,
+                taskStates:         nextTaskStates,
+                history:            newHistory,
+                updated_at:         periodicTasksState.updated_at
             };
-            savePeriodicTasks();
+
+            const ok = await savePeriodicTasks();
+            if (btn) { btn.textContent = '変更してリセット'; btn.disabled = false; }
+
+            if (ok === false) {
+                periodicTasksState = prevState;
+                showPeriodicGasError('期間変更の保存に失敗しました。通信状態を確認してください。');
+                return;
+            }
+
+            periodicViewingHistoryIndex = null;
             renderPeriodicTaskTable();
             closePeriodicPeriodModal();
         }
 
         function buildPeriodicPendingText() {
-            syncPeriodicTasksWithMembers();
-            const targetMembers = getPeriodicMembers();
+            const isReadOnly = periodicViewingHistoryIndex !== null;
+
+            if (!isReadOnly) {
+                syncPeriodicTasksWithMembers();
+            }
+
+            const viewTaskStates = isReadOnly
+                ? (((periodicTasksState.history || [])[periodicViewingHistoryIndex] || {}).taskStates || {})
+                : periodicTasksState.taskStates;
+
+            const targetMembers = getPeriodicMembers(viewTaskStates);
             const lines = PERIODIC_TASK_ITEMS.map(taskName => {
                 const pendingNames = sortMembers(targetMembers.filter(member => {
-                    const taskStates = periodicTasksState.taskStates[member.id] || getDefaultPeriodicTaskValues();
-                    return taskStates[taskName] === '未';
-                })).map(member => member.name);
+                    const ts = viewTaskStates[member.id] || getDefaultPeriodicTaskValues();
+                    return ts[taskName] === '未';
+                })).map(m => m.name);
                 if (pendingNames.length === 0) return '';
                 return `【${taskName}】\n${pendingNames.join('、')}`;
             }).filter(Boolean);
@@ -2927,7 +3125,7 @@
             setInterval(updateFetchStatus, 60000);
             setInterval(updateMonthlyFetchStatus, 60000);
 
-            await Promise.all([loadMembers(), loadMonthlyRecords(), loadContractsFromGAS()]);
+            await Promise.all([loadMembers(), loadMonthlyRecords(), loadContractsFromGAS(), loadPeriodicTasks()]);
 
             if (members.length === 0) {
                 members = getSampleData();
@@ -2939,8 +3137,11 @@
                 // 自動保存は行わない
             }
 
+            if (periodicLoadFailed) {
+                showPeriodicGasError('定期タスクデータの取得に失敗しました。キャッシュで表示しています。');
+            }
+
             recipientSettings = loadRecipientSettings();
-            periodicTasksState = loadPeriodicTasks();
             loadContractSettings();
             syncPeriodicTasksWithMembers();
             populateTeamSelects();
@@ -6396,6 +6597,11 @@
 
             // 定期タスク確認
             document.getElementById('periodicTeamFilter').addEventListener('change', renderPeriodicTaskTable);
+            document.getElementById('periodicPeriodSelect').addEventListener('change', e => {
+                const val = e.target.value;
+                periodicViewingHistoryIndex = val === 'current' ? null : parseInt(val, 10);
+                renderPeriodicTaskTable();
+            });
             document.getElementById('periodicIncompleteToggleBtn').addEventListener('click', () => {
                 periodicHideCompletedOnly = !periodicHideCompletedOnly;
                 renderPeriodicTaskTable();
