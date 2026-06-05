@@ -2847,7 +2847,7 @@
                 history:    periodicTasksState.history || [],
                 updated_at: periodicTasksState.updated_at || null
             };
-            if (changed) savePeriodicTasks();
+            // saveはschedulePeriodicSave経由に一本化
         }
 
         function removePeriodicTasksForMember(memberId) {
@@ -2981,10 +2981,13 @@
         function togglePeriodicTaskStatus(memberId, taskName) {
             if (periodicViewingHistoryIndex !== null) return;
 
-            syncPeriodicTasksWithMembers();
-            const currentState = normalizePeriodicMemberTaskStates(periodicTasksState.taskStates[memberId]);
+            const currentState = normalizePeriodicMemberTaskStates(
+                periodicTasksState.taskStates[memberId]
+            );
             const currentIndex = PERIODIC_TASK_STATUS_ORDER.indexOf(currentState[taskName]);
-            const nextStatus   = PERIODIC_TASK_STATUS_ORDER[(currentIndex + 1) % PERIODIC_TASK_STATUS_ORDER.length];
+            const nextStatus   = PERIODIC_TASK_STATUS_ORDER[
+                (currentIndex + 1) % PERIODIC_TASK_STATUS_ORDER.length
+            ];
 
             periodicTasksState = {
                 ...periodicTasksState,
@@ -2994,7 +2997,10 @@
                 }
             };
             renderPeriodicTaskTable();
+            schedulePeriodicSave();
+        }
 
+        function schedulePeriodicSave() {
             clearTimeout(periodicSaveTimer);
             periodicSaveTimer = setTimeout(async () => {
                 periodicSaveTimer = null;
@@ -3002,7 +3008,7 @@
                 const snapshot = JSON.parse(JSON.stringify(periodicTasksState));
                 const ok = await savePeriodicTasks();
                 showPeriodicSaveIndicator(false);
-                if (ok === false) {
+                if (!ok) {
                     periodicTasksState = snapshot;
                     renderPeriodicTaskTable();
                     showPeriodicGasError('保存に失敗しました。通信状態を確認してください。');
