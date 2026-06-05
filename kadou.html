@@ -2642,6 +2642,7 @@
         let periodicLastLoadedAt        = null;
         let periodicLoadFailed          = false;
         let periodicViewingHistoryIndex = null;
+        let periodicSaving = false;
 
         function getRandomAlphaNumeric(length = 10) {
             const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -2979,7 +2980,9 @@
 
         function togglePeriodicTaskStatus(memberId, taskName) {
             if (periodicViewingHistoryIndex !== null) return;
+            if (periodicSaving) return;
 
+            periodicSaving = true;
             syncPeriodicTasksWithMembers();
             const currentState = normalizePeriodicMemberTaskStates(periodicTasksState.taskStates[memberId]);
             const currentIndex = PERIODIC_TASK_STATUS_ORDER.indexOf(currentState[taskName]);
@@ -2996,6 +2999,7 @@
             renderPeriodicTaskTable();
 
             savePeriodicTasks().then(ok => {
+                periodicSaving = false;
                 if (ok === false) {
                     periodicTasksState = prevState;
                     renderPeriodicTaskTable();
