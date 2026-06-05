@@ -2922,10 +2922,7 @@
             if (!tbody) return;
 
             const isReadOnly = periodicViewingHistoryIndex !== null;
-
-            if (!isReadOnly) {
-                syncPeriodicTasksWithMembers();
-            }
+            // sync はここで呼ばない。ページロード時・メンバー追加削除時のみ呼ぶ。
 
             updatePeriodicControls();
 
@@ -3043,7 +3040,6 @@
         }
 
         function openPeriodicPeriodModal() {
-            syncPeriodicTasksWithMembers();
             document.getElementById('periodicPeriodInput').value = periodicTasksState.currentPeriodLabel || PERIODIC_DEFAULT_PERIOD_LABEL;
             document.getElementById('periodicPeriodModalOverlay').classList.add('visible');
             setTimeout(() => document.getElementById('periodicPeriodInput').focus(), 50);
@@ -3102,10 +3098,6 @@
 
         function buildPeriodicPendingText() {
             const isReadOnly = periodicViewingHistoryIndex !== null;
-
-            if (!isReadOnly) {
-                syncPeriodicTasksWithMembers();
-            }
 
             const viewTaskStates = isReadOnly
                 ? (((periodicTasksState.history || [])[periodicViewingHistoryIndex] || {}).taskStates || {})
