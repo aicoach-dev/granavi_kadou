@@ -1,3 +1,14 @@
+## ⚠️ 開発・デプロイについて（2026-06-12更新）
+
+kadou.html の開発・デプロイは `granavi_overview` リポジトリで行います。
+
+- **作業ファイル**：`C:\Users\kochi\Documents\granavi_overview\kadou.html`
+- **デプロイ**：`granavi_overview\deploy.ps1 kadou.html`
+
+このリポジトリ（`granavi_kadou`）の `kadou.html` は**履歴保管のみ**です。編集しないでください。
+
+---
+
 # グラナビ 稼働（granavi_kadou）
 
 ## 概要
