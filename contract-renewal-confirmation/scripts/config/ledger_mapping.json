@@ -1,0 +1,65 @@
+{
+  "_comment": "Excel台帳パース設定。コード変更なしでヘッダー位置・値マッピングを調整できる。",
+
+  "sheet_name": "台帳一覧2026年度以降（進行中）",
+
+  "block_detection": {
+    "_comment": "A列（col_index=0）に値があれば新しい客先ブロックの開始行とみなす",
+    "title_col_index": 0
+  },
+
+  "header_row_detection": {
+    "_comment": "B列（col_index=1）に以下の文字列が含まれる行をヘッダー行とみなす",
+    "col_index": 1,
+    "marker": "手続き"
+  },
+
+  "data_row_detection": {
+    "_comment": "D列（col_index=3）が非nullの文字列であれば本人データ行とみなす",
+    "name_col_index": 3
+  },
+
+  "columns": {
+    "_comment": "必須カラムの列インデックス（0始まり）。全ブロックで共通。",
+    "status":        { "col_index": 1,  "label": "手続きステータス" },
+    "company":       { "col_index": 2,  "label": "企業/社名" },
+    "name":          { "col_index": 3,  "label": "氏名" },
+    "contract_type": { "col_index": 4,  "label": "形態/種類" },
+    "period_year":   { "col_index": 5,  "label": "期間（年度）" },
+    "period_start":  { "col_index": 6,  "label": "期間（開始日）" },
+    "period_end":    { "col_index": 7,  "label": "期間（終了日）" },
+    "extension_notice": { "col_index": 8, "label": "契約延長連絡" },
+    "consent":       { "col_index": 9,  "label": "本人確認" }
+  },
+
+  "consent_value_mapping": {
+    "_comment": "「本人確認」列の値を正規化するマッピング。新しい表記ゆれが出たらここに追加。",
+    "confirmed": ["本人了承済み", "了承みなし", "済"],
+    "pending":   [],
+    "declined":  []
+  },
+
+  "company_name_normalization": {
+    "_comment": "ブロックタイトル行（A列）は「社名：注釈」形式になることがある。ここで正規化する。データ行のC列とブロックタイトルが異なる場合もこちらで管理。",
+    "strip_suffix_after": "：",
+    "overrides": {
+      "キヤノンマーケティングジャパン株式会社": "キヤノンITソリューションズ",
+      "SCSK株式会社(2026/6まではSCSK Minoriソリューションズ）": "SCSK株式会社",
+      "イーソル株式会社（2022/5/1より業務委託契約）": "イーソル株式会社"
+    }
+  },
+
+  "block_overrides": {
+    "_comment": "特定のブロックだけ挙動を変えたい場合の設定。",
+    "グローバルプレナーズ株式会社": {
+      "period_start_col_index": null,
+      "period_end_col_index": 7,
+      "note": "期間（開始日）列がなく、H列に期間全体が入る形式。period_startはnullとして扱う。"
+    }
+  },
+
+  "skip_blocks": {
+    "_comment": "取り込み対象外にするブロックの会社名（タイトルの正規化後の値）",
+    "companies": []
+  }
+}

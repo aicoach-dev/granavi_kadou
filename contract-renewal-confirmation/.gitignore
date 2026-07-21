@@ -1,0 +1,17 @@
+# サンプルデータ（実在の個人情報を含むため git 管理外）
+scripts/sample-data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# CDK（infra/.gitignore に定義済みだが念のため）
+infra/node_modules/
+infra/cdk.out/
+infra/*.js
+infra/*.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
