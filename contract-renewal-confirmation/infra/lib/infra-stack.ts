@@ -96,11 +96,20 @@ export class ContractRenewalStack extends cdk.Stack {
               `arn:aws:sqs:${region}:${accountId}:contract-renewal-*`,
             ],
           }),
-          // SES: リソースレベル制限なし（SES の仕様上 * が必要）
+          // SES: SendEmail/SendRawEmail は送信元 identity ARN でリソース制限可能
+          //      GetSendQuota は resource type なし（AWS 仕様上 * が必要）
           new iam.PolicyStatement({
-            sid: 'AllowSES',
+            sid: 'AllowSESSend',
             effect: iam.Effect.ALLOW,
-            actions: ['ses:SendEmail', 'ses:SendRawEmail', 'ses:GetSendQuota'],
+            actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+            resources: [
+              `arn:aws:ses:${region}:${accountId}:identity/e-gravity.co.jp`,
+            ],
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowSESQuota',
+            effect: iam.Effect.ALLOW,
+            actions: ['ses:GetSendQuota'],
             resources: ['*'],
           }),
           // EventBridge: このプロジェクトのイベントバスのみ
