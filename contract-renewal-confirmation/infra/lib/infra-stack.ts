@@ -409,10 +409,17 @@ export class ContractRenewalStack extends cdk.Stack {
       environment: {
         CURRENT_STATE_TABLE: currentStateTable.tableName,
         AUDIT_LOG_TABLE: auditLogTable.tableName,
-        EXCEL_SOURCE: 'S3',
+        EXCEL_SOURCE: 'SHAREPOINT',
+        // S3 モードへの切り替え: EXCEL_SOURCE を 'S3' に変更し EXCEL_BUCKET/EXCEL_KEY を参照する
         EXCEL_BUCKET: syncDataBucket.bucketName,
         EXCEL_KEY: 'test-data/synthetic.xlsx',
         GRAPH_API_SECRET_NAME: graphApiSecret.secretName,
+        // SharePoint 接続設定（EXCEL_SOURCE=SHAREPOINT 時に参照）
+        SHAREPOINT_SITE_HOST: 'gravityoffice365.sharepoint.com',
+        SHAREPOINT_SITE_PATH: '/sites/01_',
+        // SHAREPOINT_ITEM_GUID: SharePoint でファイルを開いた URL の sourcedoc パラメータ（{} なし）
+        // 変更時: このGUIDを更新して cdk deploy する（パス・ファイル名変更では不要）
+        SHAREPOINT_ITEM_GUID: '438071B4-9178-4A3F-A9D2-28F285C9FE1C',
       },
       description: '週次同期Lambda — Excel台帳を取得・解析し DynamoDB に候補レコードを書き込む',
     });

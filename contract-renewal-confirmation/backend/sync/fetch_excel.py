@@ -3,7 +3,7 @@ Excel台帳ファイルの取得 — SharePoint Graph API vs S3 の切り替え
 
 環境変数 EXCEL_SOURCE:
   'S3'         : S3バケットからファイルを取得（テスト・初期実装用）
-  'SHAREPOINT' : SharePoint Graph APIからファイルを取得（Entra IDアプリ登録完了後）
+  'SHAREPOINT' : SharePoint Graph APIからファイルを取得（本番環境）
 
 【SharePoint 接続に必要な環境変数】（EXCEL_SOURCE=SHAREPOINT 時のみ参照）
   GRAPH_API_SECRET_NAME : Secrets Manager のシークレット名
@@ -11,9 +11,16 @@ Excel台帳ファイルの取得 — SharePoint Graph API vs S3 の切り替え
   SHAREPOINT_SITE_HOST  : SharePoint ホスト名
                           例: gravityoffice365.sharepoint.com
   SHAREPOINT_SITE_PATH  : SharePoint サイトパス（サーバー相対パス）
-                          例: /sites/granavi
-  SHAREPOINT_FILE_PATH  : ドキュメントライブラリルートからのファイルパス
-                          例: Shared Documents/2026年度台帳.xlsx
+                          例: /sites/01_
+  SHAREPOINT_ITEM_GUID  : ファイルの SharePoint UniqueId（GUID）。
+                          SharePoint でファイルを開いた際の URL の sourcedoc パラメータ
+                          （URLデコード後の {} で括られた部分）から取得する。
+                          例: ...?sourcedoc=%7B438071B4-9178-4A3F-A9D2-28F285C9FE1C%7D
+                          → SHAREPOINT_ITEM_GUID = 438071B4-9178-4A3F-A9D2-28F285C9FE1C
+
+                          パス指定ではなく GUID 指定にしているため、ファイルが移動・
+                          リネームされても GUID は変わらない。変更が必要な場合は
+                          CDK の environment.SHAREPOINT_ITEM_GUID を更新して cdk deploy する。
 
 【Sites.Selected 権限について】
   このアプリは Microsoft Graph API の Sites.Selected 権限を使用する。
@@ -47,9 +54,12 @@ Excel台帳ファイルの取得 — SharePoint Graph API vs S3 の切り替え
   新たなサイトへのアクセスが必要になった場合は、テナント管理者が同様の手順で付与する。
 """
 import json
+import logging
 import os
 
 import boto3
+
+logger = logging.getLogger(__name__)
 
 EXCEL_SOURCE = os.environ.get("EXCEL_SOURCE", "S3")
 
@@ -71,49 +81,100 @@ def _fetch_from_s3() -> bytes:
 def _fetch_from_sharepoint() -> bytes:
     """SharePoint Graph API からExcel台帳を取得する。
 
+    ファイル特定方式: SharePoint リストアイテムの UniqueId（GUID）によるドライブアイテム検索。
+    ファイル名・フォルダパスの変更に依存しない。詳細はモジュール冒頭コメント参照。
+
     認証: OAuth2 クライアント認証情報フロー (client_credentials)
     権限: Sites.Selected（サイト単位付与、詳細はモジュール冒頭コメント参照）
     """
-    import requests  # Lambda パッケージ内でのみ利用
+    import requests
 
     # Secrets Manager から認証情報を取得
     secret_name = os.environ["GRAPH_API_SECRET_NAME"]
     sm = boto3.client("secretsmanager")
     creds = json.loads(sm.get_secret_value(SecretId=secret_name)["SecretString"])
 
-    tenant_id = creds["tenantId"]
-    client_id = creds["clientId"]
-    client_secret = creds["clientSecret"]
-
     # OAuth2 クライアント認証情報フローでアクセストークン取得
-    token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
     token_resp = requests.post(
-        token_url,
+        f"https://login.microsoftonline.com/{creds['tenantId']}/oauth2/v2.0/token",
         data={
             "grant_type": "client_credentials",
-            "client_id": client_id,
-            "client_secret": client_secret,
+            "client_id": creds["clientId"],
+            "client_secret": creds["clientSecret"],
             "scope": "https://graph.microsoft.com/.default",
         },
         timeout=30,
     )
     token_resp.raise_for_status()
-    access_token = token_resp.json()["access_token"]
+    h = {"Authorization": f"Bearer {token_resp.json()['access_token']}"}
+    g = "https://graph.microsoft.com/v1.0"
 
-    headers = {"Authorization": f"Bearer {access_token}"}
+    site_host = os.environ["SHAREPOINT_SITE_HOST"]
+    site_path = os.environ["SHAREPOINT_SITE_PATH"]
+    # GUID は {} なしで設定（例: 438071B4-9178-4A3F-A9D2-28F285C9FE1C）
+    # SharePoint の UniqueId フィールドは OData フィルターで {} 付き形式を使用する
+    item_guid = os.environ["SHAREPOINT_ITEM_GUID"]
+    # Step 1: サイトID解決
+    site_resp = requests.get(f"{g}/sites/{site_host}:{site_path}", headers=h, timeout=30)
+    site_resp.raise_for_status()
+    site_id = site_resp.json()["id"]
+    logger.info(f"SharePoint サイトID解決: {site_id}")
 
-    # SharePoint 設定
-    site_host = os.environ["SHAREPOINT_SITE_HOST"]  # 例: gravityoffice365.sharepoint.com
-    site_path = os.environ["SHAREPOINT_SITE_PATH"]  # 例: /sites/granavi
-    file_path = os.environ["SHAREPOINT_FILE_PATH"]  # 例: Shared Documents/2026年度台帳.xlsx
-
-    # Graph API でファイルコンテンツを取得
-    # /sites/{host}:{server-relative-path}:/drive/root:/{file-path}:/content
-    file_url = (
-        f"https://graph.microsoft.com/v1.0"
-        f"/sites/{site_host}:{site_path}"
-        f":/drive/root:/{file_path}:/content"
+    # Step 2: "Shared Documents" リストアイテムを全件取得して UniqueId 照合でファイルを特定
+    #
+    #   試みた方式と却下理由:
+    #     A) $filter=fields/UniqueId eq '{guid}' → 400 Bad Request（listItems では OData フィルター非対応）
+    #     B) /drive/root/search(q='.xlsx')       → 500 Internal Server Error（Sites.Selected 権限下ではサーチインデックス不可）
+    #     C) 採用: リストアイテム全件取得 + fields.UniqueId クライアント側照合
+    #        search に依存しない基本的なリスト操作のみ使用するため Sites.Selected でも動作する。
+    #        GUID はパス・ファイル名変更に依存しないため最も安定した識別子である。
+    lists_resp = requests.get(
+        f"{g}/sites/{site_id}/lists?$select=id,name",
+        headers=h, timeout=30,
     )
-    file_resp = requests.get(file_url, headers=headers, timeout=60, allow_redirects=True)
-    file_resp.raise_for_status()
-    return file_resp.content
+    lists_resp.raise_for_status()
+    all_lists = lists_resp.json().get("value", [])
+    doc_lib_names = {"shared documents", "documents", "ドキュメント"}
+    doc_lib = next((l for l in all_lists if l["name"].lower() in doc_lib_names), None)
+    if doc_lib is None:
+        doc_lib = all_lists[0] if all_lists else None
+    if doc_lib is None:
+        raise ValueError(f"ドキュメントライブラリが {site_path} に見つかりません")
+    logger.info(f"ドキュメントライブラリ: {doc_lib['name']} (id={doc_lib['id']})")
+
+    drive_item_id = None
+    next_url: str | None = (
+        f"{g}/sites/{site_id}/lists/{doc_lib['id']}/items"
+        f"?$select=id&$expand=driveItem($select=id,name),fields($select=UniqueId)"
+        f"&$top=500"
+    )
+    pages = 0
+    while next_url and drive_item_id is None:
+        pages += 1
+        resp = requests.get(next_url, headers=h, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        for item in data.get("value", []):
+            uid = item.get("fields", {}).get("UniqueId", "")
+            if uid.strip("{}").upper() == item_guid.upper():
+                di = item.get("driveItem")
+                if di:
+                    drive_item_id = di["id"]
+                    logger.info(f"ファイル特定成功: {di['name']} (page={pages}, GUID={item_guid})")
+                break
+        next_url = data.get("@odata.nextLink")
+
+    if drive_item_id is None:
+        raise ValueError(
+            f"GUID={item_guid} のファイルが {doc_lib['name']} で見つかりません（{pages} ページ検索）。"
+            f"ファイルが移動・削除された場合は SHAREPOINT_ITEM_GUID 環境変数を更新して cdk deploy する。"
+        )
+
+    # Step 3: ファイルコンテンツ取得（ダウンロード）
+    content_resp = requests.get(
+        f"{g}/sites/{site_id}/drive/items/{drive_item_id}/content",
+        headers=h, timeout=60, allow_redirects=True,
+    )
+    content_resp.raise_for_status()
+    logger.info(f"ファイルダウンロード完了: {len(content_resp.content):,} bytes")
+    return content_resp.content
