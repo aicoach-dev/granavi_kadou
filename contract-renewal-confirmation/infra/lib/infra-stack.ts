@@ -341,20 +341,31 @@ export class ContractRenewalStack extends cdk.Stack {
         {
           bundling: {
             image: lambda.Runtime.PYTHON_3_12.bundlingImage,
+            // scripts/config/ を Docker コンテナ内にマウント（Docker フォールバック用）
+            volumes: [
+              {
+                hostPath: path.join(__dirname, '../../scripts/config'),
+                containerPath: '/scripts-config',
+              },
+            ],
             // ローカルバンドリング: Docker 不要（ホストの pip を使用）
             local: {
               tryBundle(outputDir: string, _options: cdk.BundlingOptions): boolean {
                 try {
                   const srcDir = path.join(__dirname, '../../backend/sync');
+                  // scripts/config/ledger_mapping.json が唯一の正本（二重管理解消）
+                  const configSrc = path.join(__dirname, '../../scripts/config/ledger_mapping.json');
                   execSync(
                     `python -m pip install -r requirements.txt -t "${outputDir}" --quiet`,
                     { cwd: srcDir, stdio: 'inherit' },
                   );
+                  // config/ ディレクトリは別途 scripts/config/ からコピーするためスキップ
                   const skip = new Set([
                     'requirements.txt',
                     '__pycache__',
                     'node_modules',
                     '.venv',
+                    'config',
                   ]);
                   for (const item of fs.readdirSync(srcDir)) {
                     if (skip.has(item) || item.endsWith('.pyc')) continue;
@@ -366,6 +377,9 @@ export class ContractRenewalStack extends cdk.Stack {
                       fs.copyFileSync(src, dest);
                     }
                   }
+                  // 正本（scripts/config/）から config/ledger_mapping.json をコピー
+                  fs.mkdirSync(path.join(outputDir, 'config'), { recursive: true });
+                  fs.copyFileSync(configSrc, path.join(outputDir, 'config', 'ledger_mapping.json'));
                   return true;
                 } catch (e) {
                   console.error('ローカルバンドリング失敗（Docker にフォールバック）:', e);
@@ -374,12 +388,16 @@ export class ContractRenewalStack extends cdk.Stack {
               },
             },
             // Docker フォールバック（pip が PATH にない場合）
+            // /scripts-config/ は volumes で scripts/config/ をマウントしたもの（正本）
             command: [
               'bash',
               '-c',
               [
                 'pip install -r /asset-input/requirements.txt -t /asset-output --quiet',
                 'cp -r /asset-input/. /asset-output/',
+                'rm -rf /asset-output/config',
+                'mkdir -p /asset-output/config',
+                'cp /scripts-config/ledger_mapping.json /asset-output/config/',
                 'find /asset-output -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null; true',
               ].join(' && '),
             ],
