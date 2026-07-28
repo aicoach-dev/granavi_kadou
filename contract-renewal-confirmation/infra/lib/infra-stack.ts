@@ -5,7 +5,18 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct, IConstruct } from 'constructs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
 
 // このプロジェクトで作成するすべての IAM ロールに permissions boundary を自動適用する
 class PermissionsBoundaryAspect implements cdk.IAspect {
@@ -121,6 +132,18 @@ export class ContractRenewalStack extends cdk.Stack {
               `arn:aws:events:${region}:${accountId}:event-bus/contract-renewal-*`,
             ],
           }),
+          // Secrets Manager: このプロジェクトのシークレットのみ（Round 4b 以降: Graph API 認証）
+          new iam.PolicyStatement({
+            sid: 'AllowSecretsManager',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'secretsmanager:GetSecretValue',
+              'secretsmanager:DescribeSecret',
+            ],
+            resources: [
+              `arn:aws:secretsmanager:${region}:${accountId}:secret:contract-renewal-*`,
+            ],
+          }),
           // X-Ray: リソースレベル制限なし（X-Ray の仕様上 * が必要）
           new iam.PolicyStatement({
             sid: 'AllowXRay',
@@ -152,17 +175,6 @@ export class ContractRenewalStack extends cdk.Stack {
     //      gsi1-quarter-name    … 四半期別一覧・名前ソート（ops console 画面）
     //      gsi2-token           … URL トークンによる本人応答受付（スパース）
     //      gsi3-datatype-periodend … 契約終了日範囲検索（候補抽出、週次同期）
-    //
-    //    主要属性（属性値の仕様は docs/requirements.md §4 参照）:
-    //      quarter, name, company, contractType, periodStart, periodEnd
-    //      token（スパース）, sentAt, reminderCount
-    //      responseType（"consent" | "consult" | null）, respondedAt
-    //      opsConsentResult（"pending" | "consent" | "declined" | null）
-    //      opsConsentUpdatedAt, opsNote
-    //      emergencyStop, emergencyStopAt
-    //      excelConsentRaw, excelConsentSource, syncedAt
-    //      dataType（固定値 "SUBJECT"、GSI3 の PK として使用）
-    //      updatedAt
     // =========================================================
     const currentStateTable = new dynamodb.Table(this, 'CurrentStateTable', {
       tableName: 'contract-renewal-current-state',
@@ -173,7 +185,6 @@ export class ContractRenewalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    // GSI1: 四半期 × 氏名 → ops console の四半期別一覧表示
     currentStateTable.addGlobalSecondaryIndex({
       indexName: 'gsi1-quarter-name',
       partitionKey: { name: 'quarter', type: dynamodb.AttributeType.STRING },
@@ -181,7 +192,6 @@ export class ContractRenewalStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    // GSI2: token → 本人向け URL の回答受付（token が存在する行のみのスパース GSI）
     currentStateTable.addGlobalSecondaryIndex({
       indexName: 'gsi2-token',
       partitionKey: { name: 'token', type: dynamodb.AttributeType.STRING },
@@ -189,8 +199,6 @@ export class ContractRenewalStack extends cdk.Stack {
       nonKeyAttributes: ['subjectId', 'periodEnd', 'responseType', 'respondedAt'],
     });
 
-    // GSI3: periodEnd による範囲検索 → 「契約終了 1.5 ヶ月前」候補抽出
-    //       dataType は常に固定値 "SUBJECT" を書き込む
     currentStateTable.addGlobalSecondaryIndex({
       indexName: 'gsi3-datatype-periodend',
       partitionKey: { name: 'dataType', type: dynamodb.AttributeType.STRING },
@@ -214,21 +222,9 @@ export class ContractRenewalStack extends cdk.Stack {
     //
     //    PK: subjectId
     //    SK: eventId = "{ISO_TIMESTAMP}#{UUID_v4}"
-    //        → 時刻昇順にソートでき、同一ミリ秒でも衝突しない
     //
     //    GSI 設計:
     //      gsi1-quarter-time … 四半期別・時刻順エクスポート
-    //
-    //    主要属性:
-    //      eventType（"EXCEL_SYNC" | "TOKEN_ISSUED" | "EMAIL_SENT" |
-    //                 "REMINDER_SENT" | "ESCALATION_SENT" |
-    //                 "APPLICANT_RESPONSE" | "OPS_CONSENT_RECORDED" |
-    //                 "EMERGENCY_STOP" | "CLOSED" | "SYNC_CONSENT_RESOLVED"）
-    //      timestamp（ISO 8601）
-    //      actor（"SYSTEM" | "OPS:{microsoftUserId}" | "APPLICANT:{tokenPrefix}"）
-    //      quarter（GSI1 PK）
-    //      payload（JSON 文字列、イベント種別ごとの詳細）
-    //      name, company（非正規化、監査コンテキストでの参照用）
     // =========================================================
     const auditLogTable = new dynamodb.Table(this, 'AuditLogTable', {
       tableName: 'contract-renewal-audit-log',
@@ -240,7 +236,6 @@ export class ContractRenewalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    // GSI1: 四半期別・時刻順 → 四半期監査エクスポート
     auditLogTable.addGlobalSecondaryIndex({
       indexName: 'gsi1-quarter-time',
       partitionKey: { name: 'quarter', type: dynamodb.AttributeType.STRING },
@@ -261,11 +256,190 @@ export class ContractRenewalStack extends cdk.Stack {
     });
 
     // =========================================================
-    // 5. API Gateway HTTP API（スタブ）
-    //    Round 4 以降でルート・Lambda 統合を追加する
-    //    注意: CloudFront の /api/* ビヘイビアがこの API に転送するため、
-    //    Round 5 以降でルートを定義する際はパスを /api/... で定義すること
-    //    （または CloudFront Function で /api プレフィクスを除去する）
+    // 5. S3: 週次同期データバケット
+    //    Excel台帳（仮名化済み）・合成テストファイルの格納先
+    //    Lambda が GetObject でのみ読み取る
+    // =========================================================
+    const syncDataBucket = new s3.Bucket(this, 'SyncDataBucket', {
+      bucketName: `contract-renewal-sync-data-${accountId}-${region}`,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // =========================================================
+    // 6. Secrets Manager: Graph API 認証情報プレースホルダー
+    //    Entra ID アプリ登録完了後、管理者が手動で値を入力する
+    //    Round 4b 以降（SharePoint モード実装時）に Lambda から参照
+    // =========================================================
+    const graphApiSecret = new secretsmanager.Secret(this, 'GraphApiSecret', {
+      secretName: 'contract-renewal-graph-api',
+      description:
+        'Entra IDアプリ認証情報（SharePoint Graph API用）。' +
+        'Entra IDアプリ登録完了後に tenantId / clientId / clientSecret を手動入力すること。',
+      secretStringValue: cdk.SecretValue.unsafePlainText(
+        JSON.stringify({ tenantId: '', clientId: '', clientSecret: '' }),
+      ),
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // =========================================================
+    // 7. SNS: アラート通知トピック
+    //    CloudWatch Alarm → SNS → （将来: メール/Slack）
+    // =========================================================
+    const alertsTopic = new sns.Topic(this, 'AlertsTopic', {
+      topicName: 'contract-renewal-alerts',
+      displayName: '契約更新システム アラート通知',
+    });
+
+    // =========================================================
+    // 8. Lambda: 週次同期
+    //    Excel台帳を取得・解析して DynamoDB へ候補レコードを書き込む
+    //    ローカルバンドリング（pip install + ファイルコピー）で ZIP を生成
+    // =========================================================
+    const syncLambdaRole = new iam.Role(this, 'SyncLambdaRole', {
+      roleName: 'contract-renewal-sync-lambda-role',
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Weekly sync Lambda execution role (permissions boundary applied)',
+    });
+
+    syncLambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: 'CloudWatchLogs',
+        actions: [
+          'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
+        ],
+        resources: [
+          `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/contract-renewal-*`,
+          `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/contract-renewal-*:*`,
+        ],
+      }),
+    );
+
+    currentStateTable.grantReadWriteData(syncLambdaRole);
+    auditLogTable.grantWriteData(syncLambdaRole);
+    syncDataBucket.grantRead(syncLambdaRole);
+    graphApiSecret.grantRead(syncLambdaRole);
+
+    const syncLogGroup = new logs.LogGroup(this, 'SyncLambdaLogGroup', {
+      logGroupName: '/aws/lambda/contract-renewal-sync',
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const syncLambda = new lambda.Function(this, 'SyncLambda', {
+      functionName: 'contract-renewal-sync',
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'handler.lambda_handler',
+      role: syncLambdaRole,
+      logGroup: syncLogGroup,
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../../backend/sync'),
+        {
+          bundling: {
+            image: lambda.Runtime.PYTHON_3_12.bundlingImage,
+            // ローカルバンドリング: Docker 不要（ホストの pip を使用）
+            local: {
+              tryBundle(outputDir: string, _options: cdk.BundlingOptions): boolean {
+                try {
+                  const srcDir = path.join(__dirname, '../../backend/sync');
+                  execSync(
+                    `python -m pip install -r requirements.txt -t "${outputDir}" --quiet`,
+                    { cwd: srcDir, stdio: 'inherit' },
+                  );
+                  const skip = new Set([
+                    'requirements.txt',
+                    '__pycache__',
+                    'node_modules',
+                    '.venv',
+                  ]);
+                  for (const item of fs.readdirSync(srcDir)) {
+                    if (skip.has(item) || item.endsWith('.pyc')) continue;
+                    const src = path.join(srcDir, item);
+                    const dest = path.join(outputDir, item);
+                    if (fs.statSync(src).isDirectory()) {
+                      fs.cpSync(src, dest, { recursive: true });
+                    } else {
+                      fs.copyFileSync(src, dest);
+                    }
+                  }
+                  return true;
+                } catch (e) {
+                  console.error('ローカルバンドリング失敗（Docker にフォールバック）:', e);
+                  return false;
+                }
+              },
+            },
+            // Docker フォールバック（pip が PATH にない場合）
+            command: [
+              'bash',
+              '-c',
+              [
+                'pip install -r /asset-input/requirements.txt -t /asset-output --quiet',
+                'cp -r /asset-input/. /asset-output/',
+                'find /asset-output -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null; true',
+              ].join(' && '),
+            ],
+          },
+        },
+      ),
+      memorySize: 512,
+      timeout: cdk.Duration.minutes(5),
+      environment: {
+        CURRENT_STATE_TABLE: currentStateTable.tableName,
+        AUDIT_LOG_TABLE: auditLogTable.tableName,
+        EXCEL_SOURCE: 'S3',
+        EXCEL_BUCKET: syncDataBucket.bucketName,
+        EXCEL_KEY: 'test-data/synthetic.xlsx',
+        GRAPH_API_SECRET_NAME: graphApiSecret.secretName,
+      },
+      description: '週次同期Lambda — Excel台帳を取得・解析し DynamoDB に候補レコードを書き込む',
+    });
+
+    // =========================================================
+    // 9. EventBridge: 週次実行スケジュール
+    //    毎週月曜 07:00 JST (= 日曜 22:00 UTC) に Lambda を起動
+    // =========================================================
+    new events.Rule(this, 'WeeklySyncRule', {
+      ruleName: 'contract-renewal-weekly-sync',
+      description: '週次同期Lambda トリガー（月曜 07:00 JST）',
+      schedule: events.Schedule.cron({
+        minute: '0',
+        hour: '22',
+        weekDay: 'SUN',
+        month: '*',
+        year: '*',
+      }),
+      targets: [new eventsTargets.LambdaFunction(syncLambda)],
+      enabled: true,
+    });
+
+    // =========================================================
+    // 10. CloudWatch: Lambda エラー検知アラーム
+    //     Lambda 実行エラーが 1 件以上発生したら SNS へ通知
+    //     本格的なアラート設計（複数ジョブ横断・DLQ）は Round 10 で実施
+    // =========================================================
+    const syncErrorAlarm = new cloudwatch.Alarm(this, 'SyncErrorAlarm', {
+      alarmName: 'contract-renewal-sync-errors',
+      alarmDescription: '週次同期Lambda エラー検知（1件以上でアラート）',
+      metric: syncLambda.metricErrors({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Sum',
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator:
+        cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    syncErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alertsTopic));
+
+    // =========================================================
+    // 11. API Gateway HTTP API（スタブ）
+    //     Round 5 以降でルート・Lambda 統合を追加する
     // =========================================================
     const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
       apiName: 'contract-renewal-api',
@@ -279,16 +453,14 @@ export class ContractRenewalStack extends cdk.Stack {
     });
 
     // =========================================================
-    // 6. CloudFront ディストリビューション
-    //    /* → S3（静的アセット）
-    //    /api/* → API Gateway HTTP API
+    // 12. CloudFront ディストリビューション
+    //     /* → S3（静的アセット）
+    //     /api/* → API Gateway HTTP API
     // =========================================================
-    // S3 オリジン（OAC 自動生成）
     const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(
       frontendBucket,
     );
 
-    // API Gateway オリジン
     const apiOrigin = new origins.HttpOrigin(
       `${httpApi.apiId}.execute-api.${region}.amazonaws.com`,
       { protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY },
@@ -296,7 +468,6 @@ export class ContractRenewalStack extends cdk.Stack {
 
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       comment: '契約更新 本人意思確認システム',
-      // PriceClass_200: 日本・アジアを含むエッジロケーションを使用
       priceClass: cloudfront.PriceClass.PRICE_CLASS_200,
       defaultBehavior: {
         origin: s3Origin,
@@ -317,7 +488,6 @@ export class ContractRenewalStack extends cdk.Stack {
       },
       defaultRootObject: 'index.html',
       errorResponses: [
-        // S3 の 403/404 を index.html にフォールバック（SPA ルーティング用）
         {
           httpStatus: 403,
           responseHttpStatus: 200,
@@ -332,7 +502,7 @@ export class ContractRenewalStack extends cdk.Stack {
     });
 
     // =========================================================
-    // 7. スタック出力
+    // 13. スタック出力
     // =========================================================
     new cdk.CfnOutput(this, 'CloudFrontURL', {
       value: `https://${distribution.distributionDomainName}`,
@@ -349,6 +519,11 @@ export class ContractRenewalStack extends cdk.Stack {
       description: 'Frontend S3 Bucket Name',
     });
 
+    new cdk.CfnOutput(this, 'SyncDataBucketName', {
+      value: syncDataBucket.bucketName,
+      description: '週次同期データ S3 Bucket Name',
+    });
+
     new cdk.CfnOutput(this, 'CurrentStateTableName', {
       value: currentStateTable.tableName,
       description: 'DynamoDB 現在状態テーブル',
@@ -359,9 +534,24 @@ export class ContractRenewalStack extends cdk.Stack {
       description: 'DynamoDB 監査ログテーブル',
     });
 
+    new cdk.CfnOutput(this, 'SyncLambdaName', {
+      value: syncLambda.functionName,
+      description: '週次同期 Lambda 関数名',
+    });
+
+    new cdk.CfnOutput(this, 'AlertsTopicArn', {
+      value: alertsTopic.topicArn,
+      description: 'アラート通知 SNS Topic ARN',
+    });
+
+    new cdk.CfnOutput(this, 'GraphApiSecretArn', {
+      value: graphApiSecret.secretArn,
+      description: 'Graph API 認証情報 Secrets Manager ARN（Entra ID 登録後に手動入力）',
+    });
+
     new cdk.CfnOutput(this, 'PermissionsBoundaryArn', {
       value: permissionsBoundary.managedPolicyArn,
-      description: 'IAM Permissions Boundary ARN（Round 4 以降の Lambda ロールへ適用済み）',
+      description: 'IAM Permissions Boundary ARN',
     });
   }
 }
