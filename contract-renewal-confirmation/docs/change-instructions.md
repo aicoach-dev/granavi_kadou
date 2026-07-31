@@ -122,6 +122,23 @@
 
 不一致・未確認事項があれば、実装を進める前に報告してください。
 
+**実装進捗（2026-08-01時点）**
+
+推奨コミット単位0〜8は以下の通り実施済み（git logより確認）：
+- 0（ドキュメント）〜7（team CSV）：各単位に対応するコミットあり
+- 8（ops-console.html）：1コミットにまとめて実装（推奨の3分割は未実施）
+- その後 バグ修正（NO_RENEWALハイライト・保留ヘルプテキスト）、CORS是正（API_BASE空文字列化・allowOrigins絞り込み）を追加実施
+
+S3上の `ops-console.html` の ETag がローカルファイル（CORS是正後）のMD5と一致していることを確認した。
+
+**未完了事項（Round5完了の条件）**
+
+1. MSAL.js CDN問題の修正：`alcdn.msauth.net` がバージョンを問わず 404。`@azure/msal-browser@3.20.0` の minified ファイルを `frontend/vendor/` に配置し静的アセットとして自前ホスティングする方式に変更予定。
+2. EntraID リダイレクトURIの正式登録（ユーザー作業）：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html`
+3. ブラウザでの動作確認（ユーザー実施）：サインイン・一覧表示・PATCH系操作の3点
+
+上記1〜3がすべて完了した時点で「完了済みRound」へ移動する。
+
 ---
 
 ## 完了済みRound
