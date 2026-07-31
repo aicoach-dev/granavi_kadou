@@ -70,7 +70,7 @@ export const handler = async (
         }),
       );
       rawItems = (result.Items ?? []) as Record<string, unknown>[];
-      // Scan と同じソート順を適用（DynamoDB のバイト順ではなく 'ja' ロケール順）
+      // Scan と同じソート順を適用（ICU既定のHan照合順。localeCompare('ja')は読み仮名を考慮しないため五十音順にはならない）
       rawItems.sort((a, b) =>
         ((a['name'] as string) ?? '').localeCompare(
           (b['name'] as string) ?? '',
@@ -91,7 +91,7 @@ export const handler = async (
         lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
       } while (lastKey !== undefined);
 
-      // 四半期（昇順）→ 名前（昇順）でソート
+      // 四半期（昇順）→ 名前（昇順）でソート（ICU既定のHan照合順。読み仮名順ではない）
       rawItems.sort((a, b) => {
         const qA = (a['quarter'] as string) ?? '';
         const qB = (b['quarter'] as string) ?? '';
