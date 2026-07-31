@@ -421,6 +421,9 @@ export class ContractRenewalStack extends cdk.Stack {
         // SHAREPOINT_ITEM_GUID: SharePoint でファイルを開いた URL の sourcedoc パラメータ（{} なし）
         // 変更時: このGUIDを更新して cdk deploy する（パス・ファイル名変更では不要）
         SHAREPOINT_ITEM_GUID: '438071B4-9178-4A3F-A9D2-28F285C9FE1C',
+        // チームCSV キー: S3 上の team-data/team.csv が存在する週のみ team フィールドを更新
+        // ファイルが存在しない週は更新をスキップし、既存 team 値を維持する
+        TEAM_CSV_KEY: 'team-data/team.csv',
       },
       description: '週次同期Lambda — Excel台帳を取得・解析し DynamoDB に候補レコードを書き込む',
     });

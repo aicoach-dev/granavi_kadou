@@ -11,6 +11,7 @@ import os
 from candidate_extractor import extract_candidates
 from fetch_excel import fetch_excel_bytes
 from ledger_parser import load_config, parse_ledger
+from team_csv import apply_team_updates, read_team_csv
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,6 +19,8 @@ logger.setLevel(logging.INFO)
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "ledger_mapping.json")
 _CURRENT_STATE_TABLE = os.environ["CURRENT_STATE_TABLE"]
 _AUDIT_LOG_TABLE = os.environ["AUDIT_LOG_TABLE"]
+_SYNC_BUCKET = os.environ.get("EXCEL_BUCKET", "")
+_TEAM_CSV_KEY = os.environ.get("TEAM_CSV_KEY", "team-data/team.csv")
 
 
 def lambda_handler(event, context):
@@ -32,6 +35,15 @@ def lambda_handler(event, context):
 
     result = extract_candidates(records, cfg, _CURRENT_STATE_TABLE, _AUDIT_LOG_TABLE)
     logger.info(f"候補抽出完了: {result}")
+
+    # チームCSV連携（S3 にファイルが存在する週のみ更新）
+    if _SYNC_BUCKET and _TEAM_CSV_KEY:
+        team_map = read_team_csv(_SYNC_BUCKET, _TEAM_CSV_KEY)
+        team_result = apply_team_updates(
+            records, cfg, team_map, _CURRENT_STATE_TABLE
+        )
+        result["team"] = team_result
+        logger.info(f"チームCSV連携完了: {team_result}")
 
     return {
         "statusCode": 200,
