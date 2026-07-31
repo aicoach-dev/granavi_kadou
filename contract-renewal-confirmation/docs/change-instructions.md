@@ -133,11 +133,11 @@ S3上の `ops-console.html` の ETag がローカルファイル（CORS是正後
 
 **未完了事項（Round5完了の条件）**
 
-1. MSAL.js CDN問題の修正：`alcdn.msauth.net` がバージョンを問わず 404。`@azure/msal-browser@3.20.0` の minified ファイルを `frontend/vendor/` に配置し静的アセットとして自前ホスティングする方式に変更予定。
-2. EntraID リダイレクトURIの正式登録（ユーザー作業）：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html`
+1. ~~MSAL.js CDN問題の修正~~ → **解消済み（コミット `46316f2`）**：`alcdn.msauth.net` がバージョンを問わず 404 であることを確認。`@azure/msal-browser@3.20.0` の `lib/msal-browser.min.js`（300,171 bytes）を `frontend/vendor/msal-browser.min.js` としてコミットし、セルフホスティングへ移行。CloudFront 経由で HTTP 200 を確認済み。
+2. Entra ID リダイレクトURIの正式登録（ユーザー作業）：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html`
 3. ブラウザでの動作確認（ユーザー実施）：サインイン・一覧表示・PATCH系操作の3点
 
-上記1〜3がすべて完了した時点で「完了済みRound」へ移動する。
+残る未完了事項は上記 2・3 のみ。いずれも完了した時点で「完了済みRound」へ移動する。
 
 ---
 

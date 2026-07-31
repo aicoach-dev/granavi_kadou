@@ -391,3 +391,26 @@ Round5フロントエンド実装後、claude.aiスレッド側でRound5を「�
 4. 上記3の確認完了後にこのスレッドへ報告があること
 
 なお、EntraIDアプリ登録のリダイレクトURI（`https://d2ule3xvskr65i.cloudfront.net/ops-console.html`）は、ユーザーが直接Entra管理センターで設定する必要がある（Codeの作業対象外）。未登録の場合はMSAL認証が `AADSTS50011` エラーで失敗する。
+
+## 2026-08-01 MSAL.js CDN廃止対応 — セルフホスティングへ変更（Round5）
+
+### 事象
+`alcdn.msauth.net`（Microsoft 公式 MSAL CDN）が v2・v3 を問わず HTTP 404 を返すことを確認。
+具体的に試した URL：
+- `https://alcdn.msauth.net/browser/3.20.0/js/msal-browser.min.js` → 404
+- `https://alcdn.msauth.net/browser/2.38.4/js/msal-browser.min.js` → 404
+
+### 対応方針
+Microsoft の公式ドキュメント（cdn-usage.md）でも CDN 依存を推奨しない旨が記載されており、
+npm パッケージから取得してセルフホスティングする方式を採用した。
+
+### 実施内容
+- `@azure/msal-browser@3.20.0` を npm でインストールし、
+  `lib/msal-browser.min.js`（300,171 bytes）を `frontend/vendor/msal-browser.min.js` としてコミット。
+- `frontend/ops-console.html` の `<script src>` を CDN URL から
+  `vendor/msal-browser.min.js`（相対パス）に変更。
+- S3 アップロード後、CloudFront 経由で
+  `https://d2ule3xvskr65i.cloudfront.net/vendor/msal-browser.min.js` として HTTP 200 を確認（ETag: `0f3fcf2981d108f1e3716d7b0b110cce`）。
+
+### コミット
+`46316f2` — fix: MSAL.js をCDN参照からセルフホスティングに変更（vendor/msal-browser.min.js）
