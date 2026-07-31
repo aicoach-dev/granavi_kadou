@@ -22,6 +22,7 @@ function getActor(event: APIGatewayProxyEventV2): string {
     claims?.['preferred_username'] ??
     claims?.['unique_name'] ??
     claims?.['upn'] ??
+    claims?.['oid'] ??
     'unknown'
   );
 }

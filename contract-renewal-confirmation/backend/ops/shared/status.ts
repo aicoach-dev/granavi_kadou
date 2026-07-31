@@ -35,17 +35,17 @@ export interface CandidateStatusFields {
  *   1. opsConsentResult === 'consent'  → 本人承諾（個別確認 or Excel同期）
  *   2. opsConsentResult === 'no_renewal' → 更新しない
  *   3. responseType === 'consent'      → 本人承諾（オンライン）
- *   4. responseType === 'consult'      → 相談したい
- *   5. today >= periodStart            → 無反応のまま契約開始日到達（未送信含む）
+ *   4. today >= periodStart            → 無反応のまま契約開始日到達（未送信・相談中含む）
+ *   5. responseType === 'consult'      → 相談したい（契約開始日未到達の場合のみ）
  *   6. !sentAt                         → 未送信
  *   7. escalatedAt が設定済み          → エスカレーション対応中
  *   8. それ以外                         → 未回答
  *
  * 注意: 「保留」(opsConsentResult === 'pending') は表示ステータスを変えない。
  *       自動通知の停止条件にはなるが、ステータス7種には含まれない。
- * 注意: !sentAt（未送信）の判定は契約開始日到達より後に評価する。
- *       これにより、送信されないまま契約開始日を迎えた候補も
- *       PERIOD_REACHED（no_contact）として扱われ、ハイライト対象に含まれる。
+ * 注意: PERIOD_REACHED の reachedSubtype は
+ *       opsConsentResult === 'pending' または responseType === 'consult' の場合は
+ *       'pending_at_reached'（未定のまま到達）、それ以外は 'no_contact'（接触できず）。
  */
 export function deriveStatus(
   fields: CandidateStatusFields,
@@ -75,17 +75,19 @@ export function deriveStatus(
     return { status: 'CONSENTED', consentSource: 'ONLINE' };
   }
 
-  if (responseType === 'consult') {
-    return { status: 'WANTS_CONSULT' };
-  }
-
   const periodStartDate = new Date(periodStart);
   if (today >= periodStartDate) {
     return {
       status: 'PERIOD_REACHED',
       reachedSubtype:
-        opsConsentResult === 'pending' ? 'pending_at_reached' : 'no_contact',
+        opsConsentResult === 'pending' || responseType === 'consult'
+          ? 'pending_at_reached'
+          : 'no_contact',
     };
+  }
+
+  if (responseType === 'consult') {
+    return { status: 'WANTS_CONSULT' };
   }
 
   if (!sentAt) {

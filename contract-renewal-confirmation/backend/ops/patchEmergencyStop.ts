@@ -23,6 +23,7 @@ function getActor(event: APIGatewayProxyEventV2): string {
     claims?.['preferred_username'] ??
     claims?.['unique_name'] ??
     claims?.['upn'] ??
+    claims?.['oid'] ??
     'unknown'
   );
 }
@@ -45,6 +46,27 @@ export const handler = async (
     };
   }
 
+  let body: { active?: unknown };
+  try {
+    body = JSON.parse(event.body ?? '{}') as { active?: unknown };
+  } catch {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Invalid JSON body' }),
+    };
+  }
+
+  if (typeof body.active !== 'boolean') {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '"active" (boolean) is required' }),
+    };
+  }
+
+  const requestedActive = body.active;
+
   try {
     const existing = await docClient.send(
       new GetCommand({
@@ -62,15 +84,14 @@ export const handler = async (
     }
 
     const quarter = existing.Item['quarter'] as string;
-    const currentField = existing.Item['emergencyStopped'] as
+    const prevField = existing.Item['emergencyStopped'] as
       | EmergencyStoppedField
       | undefined;
-    const wasActive = currentField?.active ?? false;
-    const newActive = !wasActive;
+    const prevActive = prevField?.active ?? false;
     const now = new Date().toISOString();
     const actor = getActor(event);
 
-    const newField: EmergencyStoppedField = { active: newActive, by: actor, at: now };
+    const newField: EmergencyStoppedField = { active: requestedActive, by: actor, at: now };
 
     await docClient.send(
       new UpdateCommand({
@@ -84,7 +105,7 @@ export const handler = async (
       }),
     );
 
-    const eventType: AuditEventType = newActive
+    const eventType: AuditEventType = requestedActive
       ? 'EMERGENCY_STOP_ON'
       : 'EMERGENCY_STOP_OFF';
 
@@ -94,7 +115,7 @@ export const handler = async (
       quarter,
       eventType,
       actor,
-      detail: { prev: wasActive, next: newActive },
+      detail: { prev: prevActive, next: requestedActive },
     });
 
     return {

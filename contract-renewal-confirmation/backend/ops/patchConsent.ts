@@ -25,6 +25,7 @@ function getActor(event: APIGatewayProxyEventV2): string {
     claims?.['preferred_username'] ??
     claims?.['unique_name'] ??
     claims?.['upn'] ??
+    claims?.['oid'] ??
     'unknown'
   );
 }
@@ -88,15 +89,16 @@ export const handler = async (
     const prevResult = (existing.Item['opsConsentResult'] as ConsentResult | undefined) ?? null;
     const now = new Date().toISOString();
     const actor = getActor(event);
+    const valueChanged = consentResult !== prevResult;
 
     if (consentResult !== null) {
       await docClient.send(
         new UpdateCommand({
           TableName: CURRENT_STATE_TABLE,
           Key: { subjectId },
-          UpdateExpression:
-            'SET opsConsentResult = :r, opsConsentSource = :src, ' +
-            'updatedAt = :now REMOVE acknowledgedAt',
+          UpdateExpression: valueChanged
+            ? 'SET opsConsentResult = :r, opsConsentSource = :src, updatedAt = :now REMOVE acknowledgedAt'
+            : 'SET opsConsentResult = :r, opsConsentSource = :src, updatedAt = :now',
           ExpressionAttributeValues: {
             ':r': consentResult,
             ':src': 'OPS',
@@ -110,8 +112,9 @@ export const handler = async (
         new UpdateCommand({
           TableName: CURRENT_STATE_TABLE,
           Key: { subjectId },
-          UpdateExpression:
-            'SET updatedAt = :now REMOVE opsConsentResult, opsConsentSource, acknowledgedAt',
+          UpdateExpression: valueChanged
+            ? 'SET updatedAt = :now REMOVE opsConsentResult, opsConsentSource, acknowledgedAt'
+            : 'SET updatedAt = :now REMOVE opsConsentResult, opsConsentSource',
           ExpressionAttributeValues: { ':now': now },
         }),
       );

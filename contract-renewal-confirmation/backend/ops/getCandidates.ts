@@ -70,6 +70,13 @@ export const handler = async (
         }),
       );
       rawItems = (result.Items ?? []) as Record<string, unknown>[];
+      // Scan と同じソート順を適用（DynamoDB のバイト順ではなく 'ja' ロケール順）
+      rawItems.sort((a, b) =>
+        ((a['name'] as string) ?? '').localeCompare(
+          (b['name'] as string) ?? '',
+          'ja',
+        ),
+      );
     } else {
       // 四半期未指定: 全件スキャン（LastEvaluatedKey ループ）
       let lastKey: Record<string, unknown> | undefined;

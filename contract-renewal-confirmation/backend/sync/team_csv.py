@@ -41,6 +41,12 @@ def read_team_csv(bucket: str, key: str) -> dict:
 
     team_map: dict[str, str] = {}
     reader = csv.DictReader(io.StringIO(content))
+    # ヘッダー行を先読みして必須列の存在を確認
+    fieldnames = reader.fieldnames or []
+    if "name" not in fieldnames or "team" not in fieldnames:
+        raise ValueError(
+            f"チームCSVのヘッダーが不正。'name'・'team' 列が必要ですが実際の列は: {list(fieldnames)}"
+        )
     for row in reader:
         name = (row.get("name") or "").strip()
         team = (row.get("team") or "").strip()

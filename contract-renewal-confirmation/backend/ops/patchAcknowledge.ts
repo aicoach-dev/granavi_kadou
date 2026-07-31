@@ -22,6 +22,7 @@ function getActor(event: APIGatewayProxyEventV2): string {
     claims?.['preferred_username'] ??
     claims?.['unique_name'] ??
     claims?.['upn'] ??
+    claims?.['oid'] ??
     'unknown'
   );
 }
@@ -55,6 +56,8 @@ export const handler = async (
     }
 
     const quarter = existing.Item['quarter'] as string;
+    const prevAcknowledgedAt =
+      (existing.Item['acknowledgedAt'] as Record<string, string> | null | undefined) ?? null;
     const now = new Date().toISOString();
     const actor = getActor(event);
 
@@ -78,7 +81,7 @@ export const handler = async (
       quarter,
       eventType: 'ACKNOWLEDGED',
       actor,
-      detail: { acknowledgedAt },
+      detail: { prev: prevAcknowledgedAt, next: acknowledgedAt },
     });
 
     return {
