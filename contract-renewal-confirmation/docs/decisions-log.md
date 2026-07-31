@@ -182,3 +182,19 @@ IDトークンの本来の目的はクライアントアプリ自身の本人確
 - `git push`
 
 上記の「都度確認のまま残す」対象については `deny`（完全ブロック）ではなく `allow` リスト外とした。理由：`deny` にすると必要な場面でユーザーが意図的に許可することもできなくなり、2026-07-28決定の「事前申告してから手動実行」という運用と矛盾するため。
+
+## 2026-07-31 change-instructions.md への反映は、Codeによる直接編集を条件付きで許可する
+
+これまで（2026-07-28決定）、change-instructions.md はclaude.aiスレッドのみが編集し、Claude Codeは編集・追記しない運用としてきた。理由は、claude.aiスレッドがこのファイルの現状を直接読む手段を持たないため、「claude.aiスレッドが完成形を作る→ユーザーが手動で貼り付ける→claude.aiスレッドが照合する」という三者間チェックで整合性を担保する必要があったため。
+
+しかし実際の運用では、ユーザーによる手動貼り付け自体が誤りの原因になりうることが判明した（2026-07-31、Round外タスクの反映において、複数回の差分指示のうち一部が未反映のまま次の指示が積み重なる事象が発生）。一方で、Claude Codeは`.claude/settings.json`のような機械的に照合可能なファイルについては、指示通りの内容を正確に反映できることも確認済みである（同日、47件の許可リストを`cat`生出力で照合し一致を確認）。
+
+これを踏まえ、change-instructions.md についても、claude.aiスレッドが提示した完成形をClaude Codeが直接書き込む方式を認めることとした。ただし、内容の確定権限はあくまでclaude.aiスレッドにあり、Codeの役割は指示された文字列を正確に反映する機械的な作業に限定する。Codeの自己申告（「反映できています」等の要約）は今回のRound外タスクの報告でも実際の件数と食い違ったことがあるため信頼せず、編集のたびに`cat docs/change-instructions.md`の生出力を必須で報告させ、claude.aiスレッド側が全文照合してから次の作業に進む運用とする。三者間チェックのうち「ユーザーの手作業」を「Codeの機械的反映＋生出力照合」に置き換える形であり、独立した照合という構造自体は維持する。
+
+## 2026-07-31 .claude/settings.json の許可リストにPowerShell形式47件を追加（Bash形式のみでは主シェルに効いていなかった是正）
+
+2026-07-31に追加した47件の `Bash(...)` 許可ルールは、CLAUDE.mdに「Shell: PowerShell (primary); Bash tool also available」と明記されていたにもかかわらず、この環境の主な実行経路（PowerShellツール）では AWS/CDK系コマンドにほぼ効いていなかった。`Bash(...)` と `PowerShell(...)` はツール別に独立した許可モデルであり、Bashツール経由の実行のみがカバーされていたため。CLAUDE.mdで主シェルと明記されていたPowerShellへの確認が抜けていた点が原因であり、初回追加時の実機検証不足として記録する。
+
+是正として、同じ対象コマンド群（AWS describe/list/get系、DynamoDB scan/query/get-item、S3 ls/get-object、CDK diff/synth/list）をPowerShell形式（`PowerShell(...)`）でも追加し、Bash/PowerShell両方の実行経路をカバーした。加えて `PowerShell(Test-Path *)` と `PowerShell(Get-Content *)` を追加（今回の是正作業中に `.claude/settings*.json` の確認がPowerShell経由で行われることが判明したため）。結果として許可リストは合計94件（Bash形式47件＋PowerShell形式47件）となった。
+
+読み取り専用に限定する方針・除外対象（書き込み・削除・送信系、`secretsmanager get-secret-value`、`lambda invoke`、`cdk deploy`、`git push`）は変更しない。

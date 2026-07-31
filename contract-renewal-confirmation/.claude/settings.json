@@ -58,7 +58,66 @@
       "Bash(npx cdk list *)",
       "Bash(cdk diff *)",
       "Bash(cdk synth *)",
-      "Bash(cdk list *)"
+      "Bash(cdk list *)",
+
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Content *)",
+
+      "PowerShell(aws sts get-caller-identity)",
+
+      "PowerShell(aws cloudformation describe-stacks *)",
+      "PowerShell(aws cloudformation describe-stack-events *)",
+      "PowerShell(aws cloudformation describe-stack-resources *)",
+      "PowerShell(aws cloudformation list-stack-resources *)",
+      "PowerShell(aws cloudformation list-exports *)",
+
+      "PowerShell(aws dynamodb describe-table *)",
+      "PowerShell(aws dynamodb list-tables *)",
+      "PowerShell(aws dynamodb scan *)",
+      "PowerShell(aws dynamodb query *)",
+      "PowerShell(aws dynamodb get-item *)",
+      "PowerShell(aws dynamodb batch-get-item *)",
+
+      "PowerShell(aws lambda get-function *)",
+      "PowerShell(aws lambda get-function-configuration *)",
+      "PowerShell(aws lambda list-functions *)",
+      "PowerShell(aws lambda list-event-source-mappings *)",
+
+      "PowerShell(aws logs describe-log-groups *)",
+      "PowerShell(aws logs describe-log-streams *)",
+      "PowerShell(aws logs get-log-events *)",
+      "PowerShell(aws logs filter-log-events *)",
+
+      "PowerShell(aws s3 ls *)",
+      "PowerShell(aws s3api list-objects-v2 *)",
+      "PowerShell(aws s3api head-object *)",
+      "PowerShell(aws s3api get-object *)",
+
+      "PowerShell(aws events list-rules *)",
+      "PowerShell(aws events describe-rule *)",
+      "PowerShell(aws events list-targets-by-rule *)",
+      "PowerShell(aws scheduler get-schedule *)",
+      "PowerShell(aws scheduler list-schedules *)",
+
+      "PowerShell(aws sns list-subscriptions-by-topic *)",
+      "PowerShell(aws sns list-topics *)",
+      "PowerShell(aws sqs get-queue-attributes *)",
+      "PowerShell(aws sqs list-queues *)",
+
+      "PowerShell(aws secretsmanager describe-secret *)",
+      "PowerShell(aws secretsmanager list-secrets *)",
+
+      "PowerShell(aws iam simulate-custom-policy *)",
+      "PowerShell(aws iam get-role *)",
+      "PowerShell(aws iam list-attached-role-policies *)",
+      "PowerShell(aws iam get-role-policy *)",
+
+      "PowerShell(npx cdk diff *)",
+      "PowerShell(npx cdk synth *)",
+      "PowerShell(npx cdk list *)",
+      "PowerShell(cdk diff *)",
+      "PowerShell(cdk synth *)",
+      "PowerShell(cdk list *)"
     ]
   }
 }
