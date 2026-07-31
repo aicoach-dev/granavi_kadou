@@ -1,0 +1,64 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test *)",
+      "Bash([ *)",
+
+      "Bash(aws sts get-caller-identity)",
+
+      "Bash(aws cloudformation describe-stacks *)",
+      "Bash(aws cloudformation describe-stack-events *)",
+      "Bash(aws cloudformation describe-stack-resources *)",
+      "Bash(aws cloudformation list-stack-resources *)",
+      "Bash(aws cloudformation list-exports *)",
+
+      "Bash(aws dynamodb describe-table *)",
+      "Bash(aws dynamodb list-tables *)",
+      "Bash(aws dynamodb scan *)",
+      "Bash(aws dynamodb query *)",
+      "Bash(aws dynamodb get-item *)",
+      "Bash(aws dynamodb batch-get-item *)",
+
+      "Bash(aws lambda get-function *)",
+      "Bash(aws lambda get-function-configuration *)",
+      "Bash(aws lambda list-functions *)",
+      "Bash(aws lambda list-event-source-mappings *)",
+
+      "Bash(aws logs describe-log-groups *)",
+      "Bash(aws logs describe-log-streams *)",
+      "Bash(aws logs get-log-events *)",
+      "Bash(aws logs filter-log-events *)",
+
+      "Bash(aws s3 ls *)",
+      "Bash(aws s3api list-objects-v2 *)",
+      "Bash(aws s3api head-object *)",
+      "Bash(aws s3api get-object *)",
+
+      "Bash(aws events list-rules *)",
+      "Bash(aws events describe-rule *)",
+      "Bash(aws events list-targets-by-rule *)",
+      "Bash(aws scheduler get-schedule *)",
+      "Bash(aws scheduler list-schedules *)",
+
+      "Bash(aws sns list-subscriptions-by-topic *)",
+      "Bash(aws sns list-topics *)",
+      "Bash(aws sqs get-queue-attributes *)",
+      "Bash(aws sqs list-queues *)",
+
+      "Bash(aws secretsmanager describe-secret *)",
+      "Bash(aws secretsmanager list-secrets *)",
+
+      "Bash(aws iam simulate-custom-policy *)",
+      "Bash(aws iam get-role *)",
+      "Bash(aws iam list-attached-role-policies *)",
+      "Bash(aws iam get-role-policy *)",
+
+      "Bash(npx cdk diff *)",
+      "Bash(npx cdk synth *)",
+      "Bash(npx cdk list *)",
+      "Bash(cdk diff *)",
+      "Bash(cdk synth *)",
+      "Bash(cdk list *)"
+    ]
+  }
+}
