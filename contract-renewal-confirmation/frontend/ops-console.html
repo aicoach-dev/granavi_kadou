@@ -112,6 +112,13 @@
       font-size: 12px;
       min-width: 100px;
     }
+    .consent-hint {
+      display: block;
+      font-size: 10px;
+      color: #999;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
     .icon-btn {
       background: none;
       border: none;
@@ -375,7 +382,6 @@ function buildRow(item) {
 
   if (isGreyed(item))                          tr.classList.add('row-greyed');
   else if (item.status === 'WANTS_CONSULT')    tr.classList.add('row-hl-bg');
-  else if (FIXED_STATUS.has(item.status))      { /* no highlight */ }
   else if (item.status === 'NO_RENEWAL' || item.status === 'PERIOD_REACHED')
                                                tr.classList.add('row-hl-border');
 
@@ -418,8 +424,10 @@ function buildRow(item) {
   /* ⑤ 個別確認 */
   const tdCon = document.createElement('td');
   if (SHOW_CONSENT_SEL.has(item.status)) {
+    const wrap = document.createElement('div');
     const sel = document.createElement('select');
     sel.className = 'consent-sel'; sel.dataset.subjectId = item.subjectId;
+    sel.title = '「保留」は本人と実際に話せたが結論が出なかった場合のみ選択してください。電話が繋がらなかっただけの場合は「（未選択）」のままにしてください。';
     [
       { v: '',           l: '（未選択）' },
       { v: 'pending',    l: '保留' },
@@ -432,7 +440,12 @@ function buildRow(item) {
       sel.appendChild(o);
     });
     sel.addEventListener('change', onConsentChange);
-    tdCon.appendChild(sel);
+    wrap.appendChild(sel);
+    const hint = document.createElement('small');
+    hint.className = 'consent-hint';
+    hint.textContent = '保留=話せたが未定の場合のみ';
+    wrap.appendChild(hint);
+    tdCon.appendChild(wrap);
   } else {
     tdCon.textContent = '—';
   }
