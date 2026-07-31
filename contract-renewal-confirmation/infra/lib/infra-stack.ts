@@ -474,7 +474,7 @@ export class ContractRenewalStack extends cdk.Stack {
       description:
         '契約更新 本人意思確認システム API（Round 5 以降でルート実装予定）',
       corsPreflight: {
-        allowOrigins: ['*'],
+        allowOrigins: ['https://d2ule3xvskr65i.cloudfront.net'],
         allowMethods: [apigatewayv2.CorsHttpMethod.ANY],
         allowHeaders: ['Content-Type', 'Authorization'],
       },

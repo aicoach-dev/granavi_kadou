@@ -255,7 +255,7 @@ const MSAL_CONFIG = {
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
 };
 const SCOPES   = ['api://d016064a-7092-43b9-966d-13af53f3d3b8/access_as_user'];
-const API_BASE = 'https://3miwzzp6fk.execute-api.ap-northeast-1.amazonaws.com';
+const API_BASE = '';  /* CloudFront /api/* → API Gateway 経由（同一オリジン） */
 
 const STATUS_DEF = {
   NOT_SENT:       { label: '未送信',     icon: '📭' },
