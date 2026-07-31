@@ -193,7 +193,7 @@ IDトークンの本来の目的はクライアントアプリ自身の本人確
 
 ## 2026-07-31 .claude/settings.json の許可リストにPowerShell形式47件を追加（Bash形式のみでは主シェルに効いていなかった是正）
 
-2026-07-31に追加した47件の `Bash(...)` 許可ルールは、CLAUDE.mdに「Shell: PowerShell (primary); Bash tool also available」と明記されていたにもかかわらず、この環境の主な実行経路（PowerShellツール）では AWS/CDK系コマンドにほぼ効いていなかった。`Bash(...)` と `PowerShell(...)` はツール別に独立した許可モデルであり、Bashツール経由の実行のみがカバーされていたため。CLAUDE.mdで主シェルと明記されていたPowerShellへの確認が抜けていた点が原因であり、初回追加時の実機検証不足として記録する。
+2026-07-31に追加した47件の `Bash(...)` 許可ルールは、この環境の主な実行経路（PowerShellツール）では AWS/CDK系コマンドにほぼ効いていなかった。`Bash(...)` と `PowerShell(...)` はツール別に独立した許可モデルであり、Bashツール経由の実行のみがカバーされていたため。なお、初回追加時点でCLAUDE.mdを確認したところ「PowerShellが主シェルである」という記載はなく、この情報はClaude Code起動時に自動注入される環境情報（システムプロンプト）に含まれていたものであった（リポジトリ内のファイルとしては確認できない）。決定ログに「CLAUDE.mdに明記されていた」と誤って記録していたため、2026-07-31付でこの一文を訂正する。初回追加時に、根拠となる情報の出所を確認せずに実装した点を実機検証不足として記録する。
 
 是正として、同じ対象コマンド群（AWS describe/list/get系、DynamoDB scan/query/get-item、S3 ls/get-object、CDK diff/synth/list）をPowerShell形式（`PowerShell(...)`）でも追加し、Bash/PowerShell両方の実行経路をカバーした。加えて `PowerShell(Test-Path *)` と `PowerShell(Get-Content *)` を追加（今回の是正作業中に `.claude/settings*.json` の確認がPowerShell経由で行われることが判明したため）。結果として許可リストは合計94件（Bash形式47件＋PowerShell形式47件）となった。
 
