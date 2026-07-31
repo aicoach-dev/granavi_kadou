@@ -6,6 +6,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
@@ -213,7 +214,7 @@ export class ContractRenewalStack extends cdk.Stack {
         'sentAt',
         'responseType',
         'opsConsentResult',
-        'emergencyStop',
+        'emergencyStopped',
       ],
     });
 
@@ -476,6 +477,134 @@ export class ContractRenewalStack extends cdk.Stack {
         allowHeaders: ['Content-Type', 'Authorization'],
       },
     });
+
+    // =========================================================
+    // 11b. JWT Authorizer（Round 5）
+    //      ops-console からの API 呼び出しを Entra ID JWT で検証する
+    //      Tenant: gravityoffice365.onmicrosoft.com
+    //      Audience: api://d016064a-7092-43b9-966d-13af53f3d3b8
+    // =========================================================
+    const jwtAuthorizer = new apigatewayv2.CfnAuthorizer(this, 'JwtAuthorizer', {
+      apiId: httpApi.apiId,
+      authorizerType: 'JWT',
+      name: 'MsalJwtAuthorizer',
+      identitySource: ['$request.header.Authorization'],
+      jwtConfiguration: {
+        audience: ['api://d016064a-7092-43b9-966d-13af53f3d3b8'],
+        issuer:
+          'https://login.microsoftonline.com/90d75b8f-615b-463e-9492-5cb3672bad9e/v2.0',
+      },
+    });
+
+    // =========================================================
+    // 11c. Ops Lambda（Round 5: 営業事務向け API）
+    //      GET  /api/candidates
+    //      PATCH /api/candidates/{subjectId}/consent
+    //      PATCH /api/candidates/{subjectId}/emergency-stop
+    //      PATCH /api/candidates/{subjectId}/memo
+    //      PATCH /api/candidates/{subjectId}/acknowledge
+    // =========================================================
+    const opsLambdaRole = new iam.Role(this, 'OpsLambdaRole', {
+      roleName: 'contract-renewal-ops-lambda-role',
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Ops API Lambda execution role (permissions boundary applied)',
+    });
+
+    opsLambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: 'CloudWatchLogs',
+        actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+        resources: [
+          `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/contract-renewal-*`,
+          `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/contract-renewal-*:*`,
+        ],
+      }),
+    );
+
+    currentStateTable.grantReadWriteData(opsLambdaRole);
+    auditLogTable.grantWriteData(opsLambdaRole);
+
+    const opsEnv: Record<string, string> = {
+      CURRENT_STATE_TABLE: currentStateTable.tableName,
+      AUDIT_LOG_TABLE: auditLogTable.tableName,
+    };
+
+    const addOpsRoute = (
+      id: string,
+      routeKey: string,
+      entryFile: string,
+    ): lambdaNode.NodejsFunction => {
+      const slug =
+        id.charAt(0).toLowerCase() +
+        id
+          .slice(1)
+          .replace(/([A-Z])/g, '-$1')
+          .toLowerCase();
+
+      const logGroup = new logs.LogGroup(this, `${id}LogGroup`, {
+        logGroupName: `/aws/lambda/contract-renewal-ops-${slug}`,
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      });
+
+      const fn = new lambdaNode.NodejsFunction(this, `${id}Fn`, {
+        functionName: `contract-renewal-ops-${slug}`,
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, `../../backend/ops/${entryFile}`),
+        handler: 'handler',
+        role: opsLambdaRole,
+        logGroup,
+        environment: opsEnv,
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 256,
+        bundling: {
+          externalModules: ['@aws-sdk/*'],
+          minify: false,
+          sourceMap: false,
+        },
+        description: `契約更新 ops API — ${routeKey}`,
+      });
+
+      fn.addPermission(`${id}ApiGwPerm`, {
+        principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+        sourceArn: `arn:aws:execute-api:${region}:${accountId}:${httpApi.apiId}/*/*`,
+      });
+
+      const integration = new apigatewayv2.CfnIntegration(this, `${id}Integration`, {
+        apiId: httpApi.apiId,
+        integrationType: 'AWS_PROXY',
+        integrationUri: fn.functionArn,
+        payloadFormatVersion: '2.0',
+      });
+
+      new apigatewayv2.CfnRoute(this, `${id}Route`, {
+        apiId: httpApi.apiId,
+        routeKey,
+        authorizationType: 'JWT',
+        authorizerId: jwtAuthorizer.ref,
+        target: `integrations/${integration.ref}`,
+      });
+
+      return fn;
+    };
+
+    addOpsRoute('GetCandidates', 'GET /api/candidates', 'getCandidates.ts');
+    addOpsRoute(
+      'PatchConsent',
+      'PATCH /api/candidates/{subjectId}/consent',
+      'patchConsent.ts',
+    );
+    addOpsRoute(
+      'PatchEmergencyStop',
+      'PATCH /api/candidates/{subjectId}/emergency-stop',
+      'patchEmergencyStop.ts',
+    );
+    addOpsRoute('PatchMemo', 'PATCH /api/candidates/{subjectId}/memo', 'patchMemo.ts');
+    addOpsRoute(
+      'PatchAcknowledge',
+      'PATCH /api/candidates/{subjectId}/acknowledge',
+      'patchAcknowledge.ts',
+    );
 
     // =========================================================
     // 12. CloudFront ディストリビューション
