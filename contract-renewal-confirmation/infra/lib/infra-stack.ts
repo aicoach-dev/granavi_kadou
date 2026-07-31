@@ -6,7 +6,6 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
@@ -214,7 +213,7 @@ export class ContractRenewalStack extends cdk.Stack {
         'sentAt',
         'responseType',
         'opsConsentResult',
-        'emergencyStopped',
+        'emergencyStop',
       ],
     });
 
@@ -536,7 +535,7 @@ export class ContractRenewalStack extends cdk.Stack {
       id: string,
       routeKey: string,
       entryFile: string,
-    ): lambdaNode.NodejsFunction => {
+    ): lambda.Function => {
       const slug =
         id.charAt(0).toLowerCase() +
         id
@@ -550,21 +549,50 @@ export class ContractRenewalStack extends cdk.Stack {
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       });
 
-      const fn = new lambdaNode.NodejsFunction(this, `${id}Fn`, {
+      const opsSrcDir = path.join(__dirname, '../../backend/ops');
+      const infraDir = path.join(__dirname, '..');
+
+      const fn = new lambda.Function(this, `${id}Fn`, {
         functionName: `contract-renewal-ops-${slug}`,
         runtime: lambda.Runtime.NODEJS_22_X,
-        entry: path.join(__dirname, `../../backend/ops/${entryFile}`),
-        handler: 'handler',
+        handler: 'index.handler',
         role: opsLambdaRole,
         logGroup,
         environment: opsEnv,
         timeout: cdk.Duration.seconds(30),
         memorySize: 256,
-        bundling: {
-          externalModules: ['@aws-sdk/*'],
-          minify: false,
-          sourceMap: false,
-        },
+        code: lambda.Code.fromAsset(opsSrcDir, {
+          bundling: {
+            image: lambda.Runtime.NODEJS_22_X.bundlingImage,
+            local: {
+              tryBundle(outputDir: string): boolean {
+                try {
+                  execSync(
+                    [
+                      `npx esbuild`,
+                      `"${path.join(opsSrcDir, entryFile)}"`,
+                      `--bundle`,
+                      `--target=node22`,
+                      `--platform=node`,
+                      `"--outfile=${path.join(outputDir, 'index.js')}"`,
+                      `--external:@aws-sdk/*`,
+                    ].join(' '),
+                    { cwd: infraDir, stdio: 'inherit' },
+                  );
+                  return true;
+                } catch (e) {
+                  console.error(`バンドリング失敗 (${entryFile}):`, e);
+                  return false;
+                }
+              },
+            },
+            command: [
+              'bash',
+              '-c',
+              `npx esbuild /asset-input/${entryFile} --bundle --target=node22 --platform=node --outfile=/asset-output/index.js "--external:@aws-sdk/*"`,
+            ],
+          },
+        }),
         description: `契約更新 ops API — ${routeKey}`,
       });
 
