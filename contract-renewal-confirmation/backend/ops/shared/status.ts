@@ -36,13 +36,16 @@ export interface CandidateStatusFields {
  *   2. opsConsentResult === 'no_renewal' → 更新しない
  *   3. responseType === 'consent'      → 本人承諾（オンライン）
  *   4. responseType === 'consult'      → 相談したい
- *   5. !sentAt                         → 未送信
- *   6. today >= periodStart            → 無反応のまま契約開始日到達
+ *   5. today >= periodStart            → 無反応のまま契約開始日到達（未送信含む）
+ *   6. !sentAt                         → 未送信
  *   7. escalatedAt が設定済み          → エスカレーション対応中
  *   8. それ以外                         → 未回答
  *
  * 注意: 「保留」(opsConsentResult === 'pending') は表示ステータスを変えない。
  *       自動通知の停止条件にはなるが、ステータス7種には含まれない。
+ * 注意: !sentAt（未送信）の判定は契約開始日到達より後に評価する。
+ *       これにより、送信されないまま契約開始日を迎えた候補も
+ *       PERIOD_REACHED（no_contact）として扱われ、ハイライト対象に含まれる。
  */
 export function deriveStatus(
   fields: CandidateStatusFields,
@@ -76,10 +79,6 @@ export function deriveStatus(
     return { status: 'WANTS_CONSULT' };
   }
 
-  if (!sentAt) {
-    return { status: 'NOT_SENT' };
-  }
-
   const periodStartDate = new Date(periodStart);
   if (today >= periodStartDate) {
     return {
@@ -87,6 +86,10 @@ export function deriveStatus(
       reachedSubtype:
         opsConsentResult === 'pending' ? 'pending_at_reached' : 'no_contact',
     };
+  }
+
+  if (!sentAt) {
+    return { status: 'NOT_SENT' };
   }
 
   if (escalatedAt) {
