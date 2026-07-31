@@ -68,11 +68,11 @@
 
 **APIエンドポイント**
 
-- `GET /api/candidates` — 候補一覧を返す。ステータス（7種）はDBに保存された値ではなく、一次情報（送信日時・回答内容・個別確認結果・緊急停止フラグ等）から都度導出する純粋関数として実装する（2026-07-21決定を踏襲）。
-- `PATCH /api/candidates/{subjectId}/consent` — 個別確認結果（4値：未選択／保留／本人承諾／更新しない）を更新する。上書き自由、変更前後の値を監査ログに記録する（2026-07-21決定）。このエンドポイントは、更新の副作用として `acknowledgedAt` を必ずnullにリセットすること（2026-07-31決定）。フロント側は誤操作軽減のための確認ダイアログ（ブラウザネイティブconfirm）を設ける。
-- `PATCH /api/candidates/{subjectId}/emergency-stop` — 緊急停止のON/OFFを切り替える（トグル）。実行者・日時を監査ログに記録する。フロント側は確認ダイアログ（自動処理の停止・再開に関わるため）を設ける。
-- `PATCH /api/candidates/{subjectId}/memo` — 担当者メモ（単一フィールド）を上書きする。変更前後の内容を監査ログに記録する。自由記述の低リスク操作のため、確認ダイアログは必須としない。
-- `PATCH /api/candidates/{subjectId}/acknowledge` — 「対応開始」を記録する（`acknowledgedAt`に現在時刻・実行者をセット）。
+- `GET /api/candidates` — 候補一覧を返す。ステータス（7種）はDBに保存された値ではなく、一次情報（送信日時・回答内容・個別確認結果・緊急停止フラグ等）から都度導出する純粋関数として実装する（2026-07-21決定を踏襲）。リクエストボディ不要。クエリパラメータ `?quarter=2026Q3` で絞り込み可（省略時は全件）。レスポンス: `{ quarter: string|null, items: Item[] }`。
+- `PATCH /api/candidates/{subjectId}/consent` — 個別確認結果（4値：未選択／保留／本人承諾／更新しない）を更新する。上書き自由、変更前後の値を監査ログに記録する（2026-07-21決定）。このエンドポイントは、更新の副作用として `acknowledgedAt` を必ずnullにリセットすること（2026-07-31決定）。フロント側は誤操作軽減のための確認ダイアログ（ブラウザネイティブconfirm）を設ける。リクエストボディ: `{ "result": "consent" | "pending" | "no_renewal" | null }`（フィールド名は `result`、`consentResult` ではない）。レスポンス: `{ subjectId, opsConsentResult }`。
+- `PATCH /api/candidates/{subjectId}/emergency-stop` — 緊急停止のON/OFFを切り替える（トグル）。実行者・日時を監査ログに記録する。フロント側は確認ダイアログ（自動処理の停止・再開に関わるため）を設ける。リクエストボディ不要。レスポンス: `{ subjectId, emergencyStopped: { active: boolean, by: string, at: string } }`。
+- `PATCH /api/candidates/{subjectId}/memo` — 担当者メモ（単一フィールド）を上書きする。変更前後の内容を監査ログに記録する。自由記述の低リスク操作のため、確認ダイアログは必須としない。リクエストボディ: `{ "memo": string | null }`（nullでフィールド削除）。レスポンス: `{ subjectId, opsMemo }`。
+- `PATCH /api/candidates/{subjectId}/acknowledge` — 「対応開始」を記録する（`acknowledgedAt`に現在時刻・実行者をセット）。リクエストボディ不要。レスポンス: `{ subjectId, acknowledgedAt: { at: string, by: string } }`。
 
 **DynamoDB 現在状態テーブルへの追加フィールド（想定・仮称）**
 

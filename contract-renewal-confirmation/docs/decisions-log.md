@@ -264,3 +264,29 @@ Round5実装中に判明した設計上の食い違いとして、`GET /api/cand
 Round5のバックエンド実装中、DynamoDB GSI3のnonKeyAttributesに`emergencyStop`という名称が既に存在していたことが判明した。これはRound3（基盤構築、コミット`21ec06c`）の段階で、将来追加予定のフィールドを見越して仮置きされていたものであり、当時のdecisions-log.mdには記録されていなかった。Round5で正式に`emergencyStopped`という名称を決定したため、Round5のコミット1でこの表記を修正した（`emergencyStop`→`emergencyStopped`）。
 
 理由：目的①「エビデンスを残すこと」に照らすと、軽微な仮置きであっても記録がないと、後から発見した際に経緯の確認コストが発生する。今後、将来の機能を見越した仮置き（インフラ定義・命名等）を行う場合は、軽微であってもdecisions-log.mdに一言記録することを徹底する。
+
+## 2026-07-31 ops Lambda（TypeScript）のバンドリング方式を`NodejsFunction`から`lambda.Code.fromAsset`＋ローカルesbuildバンドリングに変更
+
+Round5の`GET/PATCH`系Lambda（`backend/ops/`配下）は、CDKの`NodejsFunction`コンストラクトでは正しくバンドルできないことが判明した。`NodejsFunction`はentryファイルが`projectRoot`（`infra/`）配下にあることを前提としており、`backend/ops/`は`infra/`の兄弟ディレクトリであるためエラーとなる。`projectRoot`をリポジトリルートに変更する対処も試みたが、esbuildの`node_modules`解決パスとの整合が取れず、別の問題が発生した。
+
+最終的に、既存のPython Lambda（週次同期）と同じ方式である`lambda.Code.fromAsset`＋カスタムローカルバンドリングに切り替えて解決した。これに伴い、Lambdaハンドラのエクスポート名を`handler`から`index.handler`に変更した。
+
+理由：ディレクトリ構成（`backend/`と`infra/`が兄弟関係）を維持したまま、TypeScript Lambdaを正しくバンドルするため。
+
+## 2026-07-31（訂正）GSI3 nonKeyAttributesの`emergencyStop`→`emergencyStopped`修正は、DynamoDBの制約によりデプロイ時に差し戻した
+
+同日先に追記した「GSI3 nonKeyAttributesの`emergencyStop`表記は、Round3基盤構築時の仮置きだったことが判明」エントリで「今回のコミット1でこの表記を修正した」と記録したが、実際に`cdk deploy`を実行したところ、DynamoDBの仕様上、既存GSIのnonKeyAttributes（非スループット属性の射影リスト）はin-place変更ができないことが判明し、デプロイが失敗した。
+
+これを受け、`emergencyStop`（旧名）へ差し戻してデプロイを通した。現在の実際のDynamoDBレコードには`emergencyStopped`（新名）フィールドが正しく書き込まれているが、GSI3のnonKeyAttributes射影リストには`emergencyStop`（旧名）が残っており、GSI3経由でこの属性を取得することはできない状態にある。現時点でGSI3を参照するLambdaは存在しないため、運用上の影響はない。GSI3自体を再作成（別名での新規作成等）するタイミングは、reminder Lambda実装予定のRound9に持ち越す。
+
+理由：目的①「エビデンスを残すこと」に照らし、直前のエントリの記述が実際のデプロイ結果と食い違ったまま残ることを避けるため、事実を正確に訂正した。
+
+## 2026-07-31 Round5バックエンドの動作確認で、実データに対して書き込み系APIのテストを実施してしまった。今後、書き込みを伴うテストには専用の合成テストレコードを使う
+
+Round5バックエンド（コミット1〜7）の動作確認において、DynamoDB上の実データ（44件の実レコードの1つ、`subjectId`が`3414dfa0`で始まるレコード）に対し、`PATCH /consent`・`PATCH /acknowledge`・`PATCH /emergency-stop`・`PATCH /memo`の動作確認を直接実施した。この結果、実在するエンジニアの契約更新確認レコードに、テスト用の値（`opsConsentResult`、`opsMemo: "test memo 2026-07-31"`、`emergencyStopped.active`等）が書き込まれた状態になった。
+
+2026-07-28決定で「テストデータ（synthetic/sanitized）は現在状態テーブルから削除する」という運用を確立していたが、今回は逆に、実データそのものに対して書き込みテストを行ってしまい、同じ趣旨（現在状態テーブルを実運用データのみで清潔に保つ）に反する結果となった。
+
+対応として、監査ログテーブルに記録された各操作の`prev`値を用いて、該当レコードをテスト実施前の状態へ復元する。
+
+今後の運用ルール：書き込み系API（PATCH系）の動作確認には、実在する対象者の`subjectId`を使わず、明確にテスト用と識別できる合成レコード（例：`subjectId`にテスト用プレフィックスを付与、`company`名にテストであることが分かる値を使う等）を作成し、確認後に削除する。読み取り専用（GET）の確認はこの限りではない。
