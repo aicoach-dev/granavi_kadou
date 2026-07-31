@@ -413,4 +413,4 @@ npm パッケージから取得してセルフホスティングする方式を�
   `https://d2ule3xvskr65i.cloudfront.net/vendor/msal-browser.min.js` として HTTP 200 を確認（ETag: `0f3fcf2981d108f1e3716d7b0b110cce`）。
 
 ### コミット
-`46316f2` — fix: MSAL.js をCDN参照からセルフホスティングに変更（vendor/msal-browser.min.js）
+本対応は「fix: MSAL.js をCDN参照からセルフホスティングに変更（vendor/msal-browser.min.js）」という1コミットで実施した。
