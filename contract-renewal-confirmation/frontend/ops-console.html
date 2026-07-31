@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>契約更新 本人意思確認 - 営業事務</title>
+  <script src="https://alcdn.msauth.net/browser/3.20.0/js/msal-browser.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 14px;
+      background: #f0f2f5;
+      color: #333;
+    }
+    .hdr {
+      background: #1a4a8a;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,.25);
+    }
+    .hdr-title { font-size: 15px; font-weight: 700; flex: 1; }
+    .hdr-user  { font-size: 12px; opacity: .8; }
+    .btn {
+      padding: 5px 13px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary   { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+    .btn-primary:hover:not(:disabled)   { background: #0b5ed7; }
+    .btn-secondary { background: #fff; color: #333; border-color: #ccc; }
+    .btn-secondary:hover:not(:disabled) { background: #f0f0f0; }
+    .btn-sm { padding: 3px 8px; font-size: 12px; }
+    .toolbar {
+      background: #fff;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+    .toolbar label { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 13px; }
+    .toolbar select { padding: 3px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .alert {
+      margin: 10px 16px;
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .alert-error { background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+    .loading-msg { margin: 20px 16px; color: #666; font-size: 13px; }
+    .table-wrap {
+      margin: 12px 16px;
+      background: #fff;
+      border-radius: 6px;
+      overflow: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f8f9fa;
+      padding: 9px 11px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #dee2e6;
+    }
+    td { padding: 8px 11px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-greyed td { opacity: .4; pointer-events: none; }
+    tr.row-hl-bg     { background: #e8f4fd; }
+    tr.row-hl-border { border-left: 4px solid #c0392b; }
+    tr.row-hl-border td:first-child { padding-left: 8px; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .s-NOT_SENT       { background: #e2e3e5; color: #383d41; }
+    .s-NO_RESPONSE    { background: #fff3cd; color: #664d03; }
+    .s-WANTS_CONSULT  { background: #cfe2ff; color: #084298; }
+    .s-ESCALATED      { background: #ffe5d0; color: #7a2f00; }
+    .s-CONSENTED      { background: #d1e7dd; color: #0a3622; }
+    .s-NO_RENEWAL     { background: #f8d7da; color: #58151c; }
+    .s-PERIOD_REACHED { background: #f8d7da; color: #321117; }
+    .status-sub { display: block; font-size: 11px; color: #888; margin-top: 2px; }
+    .name-cell { white-space: normal; min-width: 90px; }
+    .name-main { font-weight: 600; }
+    .name-team { font-size: 11px; color: #888; }
+    .consent-sel {
+      padding: 3px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+      min-width: 100px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 3px 5px;
+      border-radius: 4px;
+      font-size: 17px;
+      line-height: 1;
+    }
+    .icon-btn:hover { background: #f0f0f0; }
+    .est-on  { color: #dc3545; }
+    .est-off { color: #bbb; }
+    .memo-on  { color: #0d6efd; }
+    .memo-off { color: #bbb; }
+    .empty-msg { margin: 24px 16px; color: #888; font-size: 13px; }
+    .banner {
+      margin: 10px 16px;
+      padding: 12px 16px;
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      border-radius: 6px;
+      color: #0c5460;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 22px;
+      width: 440px;
+      max-width: 92vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    }
+    .modal-box h3 { margin: 0 0 6px; font-size: 15px; }
+    .modal-sub { font-size: 12px; color: #666; margin: 0 0 12px; }
+    .modal-box textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .modal-acts { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    .hidden { display: none !important; }
+    #send-count {
+      background: rgba(255,255,255,.25);
+      border-radius: 10px;
+      padding: 0 6px;
+      margin-left: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-title">契約更新 本人意思確認</div>
+  <span class="hdr-user" id="user-disp"></span>
+  <button class="btn btn-secondary btn-sm" id="logout-btn">サインアウト</button>
+  <button class="btn btn-primary" id="send-btn" disabled>
+    選択した対象へ送信<span id="send-count">（0件）</span>
+  </button>
+</header>
+
+<div class="toolbar">
+  <label for="q-filter">四半期:</label>
+  <select id="q-filter"><option value="">全件</option></select>
+  <button class="btn btn-secondary btn-sm" id="reload-btn">再読み込み</button>
+</div>
+
+<div id="error-msg" class="alert alert-error hidden"></div>
+<div id="loading-msg" class="loading-msg">認証中...</div>
+
+<div id="table-wrap" class="table-wrap hidden">
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="sel-all" title="全選択 / 解除"></th>
+        <th>氏名・チーム</th>
+        <th>客先</th>
+        <th>ステータス</th>
+        <th>個別確認</th>
+        <th>送信日時・回数</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<p id="empty-msg" class="empty-msg hidden">候補者データがありません。</p>
+
+<div id="send-banner" class="banner hidden">
+  <span>ℹ️ 送信機能はRound 6で実装予定です。選択内容の確認は完了しました。</span>
+  <button class="btn btn-secondary btn-sm" id="banner-close">閉じる</button>
+</div>
+
+<!-- 担当者メモ モーダル -->
+<div id="memo-modal" class="modal-ov hidden" role="dialog" aria-modal="true" aria-labelledby="memo-title">
+  <div class="modal-box">
+    <h3 id="memo-title">担当者メモ</h3>
+    <p class="modal-sub" id="memo-sub"></p>
+    <textarea id="memo-ta" rows="6" maxlength="2000"
+      placeholder="経緯・確認内容などを記録してください（最大2000文字）"></textarea>
+    <div class="modal-acts">
+      <button class="btn btn-secondary" id="memo-cancel">キャンセル</button>
+      <button class="btn btn-primary"   id="memo-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── 定数 ── */
+const MSAL_CONFIG = {
+  auth: {
+    clientId:    'd016064a-7092-43b9-966d-13af53f3d3b8',
+    authority:   'https://login.microsoftonline.com/90d75b8f-615b-463e-9492-5cb3672bad9e',
+    redirectUri: window.location.origin + window.location.pathname,
+  },
+  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
+};
+const SCOPES   = ['api://d016064a-7092-43b9-966d-13af53f3d3b8/access_as_user'];
+const API_BASE = 'https://3miwzzp6fk.execute-api.ap-northeast-1.amazonaws.com';
+
+const STATUS_DEF = {
+  NOT_SENT:       { label: '未送信',     icon: '📭' },
+  NO_RESPONSE:    { label: '未回答',     icon: '⏳' },
+  WANTS_CONSULT:  { label: '相談したい', icon: '💬' },
+  ESCALATED:      { label: '対応中',     icon: '⚠️' },
+  CONSENTED:      { label: '承諾済み',   icon: '✅' },
+  NO_RENEWAL:     { label: '更新しない', icon: '🚫' },
+  PERIOD_REACHED: { label: '期限到達',   icon: '🔴' },
+};
+
+/* 個別確認セレクトを表示するステータス */
+const SHOW_CONSENT_SEL = new Set([
+  'NOT_SENT', 'NO_RESPONSE', 'WANTS_CONSULT', 'ESCALATED', 'PERIOD_REACHED'
+]);
+/* チェックボックスを無効化するステータス（確定済み） */
+const FIXED_STATUS = new Set(['CONSENTED', 'NO_RENEWAL']);
+
+/* ── 状態 ── */
+let msalInstance;
+let allItems   = [];
+let curQuarter = '';
+let memoTarget = null;   /* { subjectId, name } */
+
+/* ── DOM参照 ── */
+const $err     = document.getElementById('error-msg');
+const $loading = document.getElementById('loading-msg');
+const $tableW  = document.getElementById('table-wrap');
+const $tbody   = document.getElementById('tbody');
+const $emptyM  = document.getElementById('empty-msg');
+const $userD   = document.getElementById('user-disp');
+const $sendBtn = document.getElementById('send-btn');
+const $sendCnt = document.getElementById('send-count');
+const $selAll  = document.getElementById('sel-all');
+const $qFilter = document.getElementById('q-filter');
+const $memoMod = document.getElementById('memo-modal');
+const $memoSub = document.getElementById('memo-sub');
+const $memoTA  = document.getElementById('memo-ta');
+
+/* ── ユーティリティ ── */
+function showErr(msg)  { $err.textContent = msg;  $err.classList.remove('hidden'); }
+function hideErr()     { $err.classList.add('hidden'); }
+function setLoad(msg)  { $loading.textContent = msg; $loading.classList.remove('hidden'); }
+function hideLoad()    { $loading.classList.add('hidden'); }
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('ja-JP') + ' '
+       + d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ── MSAL ── */
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length === 0) { await msalInstance.loginRedirect({ scopes: SCOPES }); return ''; }
+  try {
+    const r = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
+    return r.accessToken;
+  } catch {
+    await msalInstance.acquireTokenRedirect({ scopes: SCOPES });
+    return '';
+  }
+}
+
+/* ── API ── */
+async function apiFetch(path, opts = {}) {
+  const token = await getToken();
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token,
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error(b.message || 'HTTP ' + res.status);
+  }
+  return res.json();
+}
+
+async function loadCandidates(quarter) {
+  const qs = quarter ? '?quarter=' + encodeURIComponent(quarter) : '';
+  return apiFetch('/api/candidates' + qs);
+}
+
+/* ── レンダリング ── */
+function updateQOptions(items) {
+  const quarters = [...new Set(items.map(i => i.quarter))].sort();
+  const existing = new Set([...$qFilter.options].slice(1).map(o => o.value));
+  quarters.forEach(q => {
+    if (!existing.has(q)) {
+      const o = document.createElement('option');
+      o.value = q; o.textContent = q;
+      $qFilter.appendChild(o);
+    }
+  });
+}
+
+function statusSub(item) {
+  if (item.status === 'CONSENTED') {
+    if (item.consentSource === 'ONLINE')     return '（本人オンライン）';
+    if (item.consentSource === 'EXCEL_SYNC') return '（Excel同期）';
+    return '（個別確認）';
+  }
+  if (item.status === 'PERIOD_REACHED') {
+    return item.reachedSubtype === 'pending_at_reached' ? '（未定のまま）' : '（接触できず）';
+  }
+  return '';
+}
+
+function isGreyed(item) {
+  if (item.status === 'CONSENTED') return true;
+  if ((item.status === 'NO_RENEWAL' || item.status === 'PERIOD_REACHED') && item.acknowledgedAt)
+    return true;
+  return false;
+}
+
+function buildRow(item) {
+  const tr = document.createElement('tr');
+  tr.dataset.subjectId = item.subjectId;
+
+  if (isGreyed(item))                          tr.classList.add('row-greyed');
+  else if (item.status === 'WANTS_CONSULT')    tr.classList.add('row-hl-bg');
+  else if (FIXED_STATUS.has(item.status))      { /* no highlight */ }
+  else if (item.status === 'NO_RENEWAL' || item.status === 'PERIOD_REACHED')
+                                               tr.classList.add('row-hl-border');
+
+  /* ① チェックボックス */
+  const tdCb = document.createElement('td');
+  const cb   = document.createElement('input');
+  cb.type = 'checkbox'; cb.className = 'row-cb';
+  cb.disabled = FIXED_STATUS.has(item.status);
+  cb.addEventListener('change', updateSendCount);
+  tdCb.appendChild(cb); tr.appendChild(tdCb);
+
+  /* ② 氏名・チーム */
+  const tdN = document.createElement('td');
+  const nd  = document.createElement('div'); nd.className = 'name-cell';
+  const nm  = document.createElement('div'); nm.className = 'name-main'; nm.textContent = item.name;
+  nd.appendChild(nm);
+  if (item.team) {
+    const nt = document.createElement('div'); nt.className = 'name-team'; nt.textContent = item.team;
+    nd.appendChild(nt);
+  }
+  tdN.appendChild(nd); tr.appendChild(tdN);
+
+  /* ③ 客先 */
+  const tdC = document.createElement('td'); tdC.textContent = item.company; tr.appendChild(tdC);
+
+  /* ④ ステータス */
+  const tdS = document.createElement('td');
+  const def = STATUS_DEF[item.status] || { label: item.status, icon: '?' };
+  const bdg = document.createElement('span');
+  bdg.className   = 'status-badge s-' + item.status;
+  bdg.textContent = def.icon + ' ' + def.label;
+  tdS.appendChild(bdg);
+  const sub = statusSub(item);
+  if (sub) {
+    const sp = document.createElement('span'); sp.className = 'status-sub'; sp.textContent = sub;
+    tdS.appendChild(sp);
+  }
+  tr.appendChild(tdS);
+
+  /* ⑤ 個別確認 */
+  const tdCon = document.createElement('td');
+  if (SHOW_CONSENT_SEL.has(item.status)) {
+    const sel = document.createElement('select');
+    sel.className = 'consent-sel'; sel.dataset.subjectId = item.subjectId;
+    [
+      { v: '',           l: '（未選択）' },
+      { v: 'pending',    l: '保留' },
+      { v: 'consent',    l: '本人承諾' },
+      { v: 'no_renewal', l: '更新しない' },
+    ].forEach(({ v, l }) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = l;
+      if ((item.opsConsentResult ?? '') === v) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', onConsentChange);
+    tdCon.appendChild(sel);
+  } else {
+    tdCon.textContent = '—';
+  }
+  tr.appendChild(tdCon);
+
+  /* ⑥ 送信日時・回数 */
+  const tdSt = document.createElement('td');
+  const dl   = document.createElement('div'); dl.textContent = item.sentAt ? fmtDate(item.sentAt) : '未送信';
+  tdSt.appendChild(dl);
+  tr.appendChild(tdSt);
+
+  /* ⑦ 操作 */
+  const tdOp = document.createElement('td');
+  tdOp.style.whiteSpace = 'nowrap';
+
+  /* 緊急停止（CONSENTED / NO_RENEWAL には非表示） */
+  if (!FIXED_STATUS.has(item.status)) {
+    const estB = document.createElement('button');
+    estB.className = 'icon-btn ' + (item.emergencyStopped?.active ? 'est-on' : 'est-off');
+    estB.title     = item.emergencyStopped?.active
+      ? '緊急停止中（クリックで解除）' : '緊急停止する';
+    estB.textContent = '🚨';
+    estB.dataset.subjectId    = item.subjectId;
+    estB.dataset.currentActive = item.emergencyStopped?.active ? '1' : '0';
+    estB.addEventListener('click', onEmergencyClick);
+    tdOp.appendChild(estB);
+  }
+
+  /* 担当者メモ */
+  const memoB = document.createElement('button');
+  memoB.className   = 'icon-btn ' + (item.opsMemo ? 'memo-on' : 'memo-off');
+  memoB.title       = item.opsMemo ? '担当者メモあり（クリックで編集）' : 'メモを追加';
+  memoB.textContent = '📝';
+  memoB.dataset.subjectId = item.subjectId;
+  memoB.dataset.name      = item.name;
+  memoB.addEventListener('click', onMemoClick);
+  tdOp.appendChild(memoB);
+
+  /* 対応開始ボタン */
+  if ((item.status === 'NO_RENEWAL' || item.status === 'PERIOD_REACHED') && !item.acknowledgedAt) {
+    const ackB = document.createElement('button');
+    ackB.className = 'btn btn-sm btn-secondary';
+    ackB.style.marginLeft = '6px';
+    ackB.textContent = '対応開始';
+    ackB.dataset.subjectId = item.subjectId;
+    ackB.addEventListener('click', onAcknowledgeClick);
+    tdOp.appendChild(ackB);
+  }
+
+  tr.appendChild(tdOp);
+  return tr;
+}
+
+function renderTable(items) {
+  $tbody.innerHTML = '';
+  if (items.length === 0) {
+    $tableW.classList.add('hidden'); $emptyM.classList.remove('hidden'); return;
+  }
+  $emptyM.classList.add('hidden');
+  items.forEach(item => $tbody.appendChild(buildRow(item)));
+  $tableW.classList.remove('hidden');
+  updateSendCount();
+}
+
+/* ── チェックボックス / 送信件数 ── */
+function updateSendCount() {
+  const checked = [...$tbody.querySelectorAll('.row-cb:checked')].length;
+  $sendCnt.textContent = '（' + checked + '件）';
+  $sendBtn.disabled    = checked === 0;
+  const all = [...$tbody.querySelectorAll('.row-cb:not(:disabled)')];
+  if (all.length === 0) { $selAll.checked = false; $selAll.indeterminate = false; return; }
+  const allChk  = all.every(c => c.checked);
+  const noneChk = all.every(c => !c.checked);
+  $selAll.checked       = allChk;
+  $selAll.indeterminate = !allChk && !noneChk;
+}
+
+$selAll.addEventListener('change', () => {
+  $tbody.querySelectorAll('.row-cb:not(:disabled)').forEach(c => { c.checked = $selAll.checked; });
+  updateSendCount();
+});
+
+/* ── 個別確認 PATCH ── */
+async function onConsentChange(e) {
+  const sel       = e.target;
+  const subjectId = sel.dataset.subjectId;
+  const result    = sel.value === '' ? null : sel.value;
+  const label     = sel.options[sel.selectedIndex].textContent;
+  if (!confirm('「' + label + '」として記録してよいですか？')) {
+    await refreshRow(subjectId); return;
+  }
+  try {
+    await apiFetch('/api/candidates/' + encodeURIComponent(subjectId) + '/consent', {
+      method: 'PATCH', body: JSON.stringify({ result }),
+    });
+    await refreshRow(subjectId);
+  } catch (err) {
+    showErr('個別確認の更新に失敗しました: ' + err.message);
+    await refreshRow(subjectId);
+  }
+}
+
+/* ── 緊急停止 PATCH ── */
+async function onEmergencyClick(e) {
+  const btn           = e.currentTarget;
+  const subjectId     = btn.dataset.subjectId;
+  const currentActive = btn.dataset.currentActive === '1';
+  const nextActive    = !currentActive;
+  const msg = nextActive
+    ? 'この対象者への自動送信・リマインドを今すぐ停止しますか？'
+    : '緊急停止を解除し、自動処理を再開しますか？';
+  if (!confirm(msg)) return;
+  try {
+    await apiFetch('/api/candidates/' + encodeURIComponent(subjectId) + '/emergency-stop', {
+      method: 'PATCH', body: JSON.stringify({ active: nextActive }),
+    });
+    await refreshRow(subjectId);
+  } catch (err) {
+    showErr('緊急停止操作に失敗しました: ' + err.message);
+  }
+}
+
+/* ── 担当者メモ PATCH ── */
+function onMemoClick(e) {
+  const btn       = e.currentTarget;
+  const subjectId = btn.dataset.subjectId;
+  const name      = btn.dataset.name;
+  const item      = allItems.find(i => i.subjectId === subjectId);
+  memoTarget      = { subjectId, name };
+  $memoSub.textContent = name + ' さん';
+  $memoTA.value   = item?.opsMemo ?? '';
+  $memoMod.classList.remove('hidden');
+  $memoTA.focus();
+}
+
+function closeMemo() { $memoMod.classList.add('hidden'); memoTarget = null; }
+
+document.getElementById('memo-cancel').addEventListener('click', closeMemo);
+$memoMod.addEventListener('click', e => { if (e.target === $memoMod) closeMemo(); });
+document.getElementById('memo-save').addEventListener('click', async () => {
+  if (!memoTarget) return;
+  const memo    = $memoTA.value.trim() || null;
+  const saveBtn = document.getElementById('memo-save');
+  saveBtn.disabled = true;
+  try {
+    await apiFetch('/api/candidates/' + encodeURIComponent(memoTarget.subjectId) + '/memo', {
+      method: 'PATCH', body: JSON.stringify({ memo }),
+    });
+    await refreshRow(memoTarget.subjectId);
+    closeMemo();
+  } catch (err) {
+    showErr('メモの保存に失敗しました: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+/* ── 対応開始 PATCH ── */
+async function onAcknowledgeClick(e) {
+  const btn       = e.currentTarget;
+  const subjectId = btn.dataset.subjectId;
+  const name      = btn.closest('tr')?.querySelector('.name-main')?.textContent ?? '';
+  if (!confirm('「' + name + '」を対応開始としてマークします。よいですか？')) return;
+  try {
+    await apiFetch('/api/candidates/' + encodeURIComponent(subjectId) + '/acknowledge', {
+      method: 'PATCH',
+    });
+    await refreshRow(subjectId);
+  } catch (err) {
+    showErr('対応開始の記録に失敗しました: ' + err.message);
+  }
+}
+
+/* ── 行リフレッシュ ── */
+async function refreshRow(subjectId) {
+  try {
+    const data    = await loadCandidates(curQuarter);
+    const updated = data.items.find(i => i.subjectId === subjectId);
+    if (!updated) return;
+    const idx = allItems.findIndex(i => i.subjectId === subjectId);
+    if (idx >= 0) allItems[idx] = updated;
+    const oldTr = $tbody.querySelector('[data-subject-id="' + CSS.escape(subjectId) + '"]');
+    if (oldTr) oldTr.replaceWith(buildRow(updated));
+    updateSendCount();
+  } catch (err) {
+    showErr('データ更新に失敗しました: ' + err.message);
+  }
+}
+
+/* ── 送信ボタン ── */
+$sendBtn.addEventListener('click', () => {
+  const checked = [...$tbody.querySelectorAll('.row-cb:checked')];
+  if (checked.length === 0) return;
+  if (!confirm(checked.length + '名へ意思確認メールを送信しますか？')) return;
+  document.getElementById('send-banner').classList.remove('hidden');
+  checked.forEach(c => { c.checked = false; });
+  updateSendCount();
+});
+document.getElementById('banner-close').addEventListener('click', () => {
+  document.getElementById('send-banner').classList.add('hidden');
+});
+
+/* ── フィルター / リロード ── */
+$qFilter.addEventListener('change', async () => { curQuarter = $qFilter.value; await fetchAll(); });
+document.getElementById('reload-btn').addEventListener('click', () => fetchAll());
+document.getElementById('logout-btn').addEventListener('click', () => msalInstance.logoutRedirect());
+
+async function fetchAll() {
+  hideErr(); setLoad('読み込み中…');
+  $tableW.classList.add('hidden'); $emptyM.classList.add('hidden');
+  try {
+    const data = await loadCandidates(curQuarter);
+    allItems = data.items;
+    if (!curQuarter) updateQOptions(allItems);
+    renderTable(allItems);
+  } catch (err) {
+    showErr('データの取得に失敗しました: ' + err.message);
+  } finally {
+    hideLoad();
+  }
+}
+
+/* ── 初期化 ── */
+(async () => {
+  try {
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    await msalInstance.initialize();
+    const redirectResult = await msalInstance.handleRedirectPromise();
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) {
+      setLoad('サインインにリダイレクトします…');
+      await msalInstance.loginRedirect({ scopes: SCOPES }); return;
+    }
+    const account = redirectResult?.account ?? accounts[0];
+    $userD.textContent = account.username || account.name || '';
+    await fetchAll();
+  } catch (err) {
+    showErr('初期化エラー: ' + err.message);
+    hideLoad();
+  }
+})();
+</script>
+</body>
+</html>
