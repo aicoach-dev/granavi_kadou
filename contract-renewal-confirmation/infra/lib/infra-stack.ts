@@ -484,7 +484,8 @@ export class ContractRenewalStack extends cdk.Stack {
     // 11b. JWT Authorizer（Round 5）
     //      ops-console からの API 呼び出しを Entra ID JWT で検証する
     //      Tenant: gravityoffice365.onmicrosoft.com
-    //      Audience: api://d016064a-7092-43b9-966d-13af53f3d3b8
+    //      Audience: d016064a-7092-43b9-966d-13af53f3d3b8
+    //      (accessTokenAcceptedVersion=2 のため aud は GUID 形式で発行される)
     // =========================================================
     const jwtAuthorizer = new apigatewayv2.CfnAuthorizer(this, 'JwtAuthorizer', {
       apiId: httpApi.apiId,
@@ -492,7 +493,7 @@ export class ContractRenewalStack extends cdk.Stack {
       name: 'MsalJwtAuthorizer',
       identitySource: ['$request.header.Authorization'],
       jwtConfiguration: {
-        audience: ['api://d016064a-7092-43b9-966d-13af53f3d3b8'],
+        audience: ['d016064a-7092-43b9-966d-13af53f3d3b8'],
         issuer:
           'https://login.microsoftonline.com/90d75b8f-615b-463e-9492-5cb3672bad9e/v2.0',
       },
