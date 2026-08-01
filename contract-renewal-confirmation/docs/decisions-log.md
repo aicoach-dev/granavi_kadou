@@ -414,3 +414,46 @@ npm パッケージから取得してセルフホスティングする方式を�
 
 ### コミット
 本対応は「fix: MSAL.js をCDN参照からセルフホスティングに変更（vendor/msal-browser.min.js）」という1コミットで実施した。
+
+## 2026-08-01 Entra ID アプリ登録の accessTokenAcceptedVersion を null → 2 に変更（認証 401 の根本原因対応）
+
+### 事象
+`GET /api/candidates` が JWT Authorizer から 401 を返し続ける問題について調査したところ、
+発行されるアクセストークンの `iss` クレームが v1.0 形式
+（`https://sts.windows.net/90d75b8f-615b-463e-9492-5cb3672bad9e/`）になっていることが判明した。
+JWT Authorizer に設定した Issuer は v2.0 形式
+（`https://login.microsoftonline.com/90d75b8f-615b-463e-9492-5cb3672bad9e/v2.0`）であるため、
+`iss` クレームの不一致が 401 の根本原因だった。
+
+### 原因
+Entra ID アプリ登録の `requestedAccessTokenVersion`（Manifest 上は `accessTokenAcceptedVersion`）が
+`null`（= v1.0）のままになっていた。
+Microsoft 公式ドキュメントによれば、この設定はリソース側（API）のアプリ登録に対して設定するものであり、
+クライアント側（MSAL.js）の設定とは独立して、この値だけで発行されるトークンのバージョンが決まる。
+
+### 対処
+ユーザーが Entra 管理センター（アプリのマニフェスト編集画面）で
+`accessTokenAcceptedVersion` を `null` から `2` に変更した（Codeの作業対象外）。
+変更後、発行されるトークンの `iss` は v2.0 形式に統一された。
+
+## 2026-08-01 JWT Authorizer の Audience を App ID URI 形式から GUID 形式に修正
+
+### 事象
+`accessTokenAcceptedVersion=2` への変更（同日決定）の副作用として、
+アクセストークンの `aud` クレームが
+App ID URI 形式（`api://d016064a-7092-43b9-966d-13af53f3d3b8`）から
+クライアント ID の GUID 形式（`d016064a-7092-43b9-966d-13af53f3d3b8`）に変わった。
+
+### 根拠
+Microsoft 公式ドキュメントの仕様：v2.0 トークンの `aud` は常に API のクライアント ID（GUID）になる。
+App ID URI 形式の `aud` は v1.0 トークンの挙動であった。
+
+### 対処
+`infra/lib/infra-stack.ts` の JWT Authorizer 定義の `audience` を
+`['api://d016064a-7092-43b9-966d-13af53f3d3b8']` から
+`['d016064a-7092-43b9-966d-13af53f3d3b8']` に変更し、CDK デプロイで反映した。
+`accessTokenAcceptedVersion=2` を固定した以上、`aud` は常に GUID 形式になるため、
+App ID URI 形式の値は今後一致することがない。
+
+### コミット
+本対応は「fix: JWT AuthorizerのAudienceをGUID形式に修正（v2.0トークン対応）」という1コミットで実施した。

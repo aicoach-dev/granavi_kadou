@@ -134,10 +134,11 @@ S3上の `ops-console.html` の ETag がローカルファイル（CORS是正後
 **未完了事項（Round5完了の条件）**
 
 1. ~~MSAL.js CDN問題の修正~~ → **解消済み**：`alcdn.msauth.net` がバージョンを問わず 404 であることを確認。`@azure/msal-browser@3.20.0` の `lib/msal-browser.min.js`（300,171 bytes）を `frontend/vendor/msal-browser.min.js` としてコミットし、セルフホスティングへ移行。CloudFront 経由で HTTP 200 を確認済み。詳細は `decisions-log.md` 2026-08-01付「MSAL.js CDN廃止対応 — セルフホスティングへ変更（Round5）」エントリを参照。
-2. Entra ID リダイレクトURIの正式登録（ユーザー作業）：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html`
-3. ブラウザでの動作確認（ユーザー実施）：サインイン・一覧表示・PATCH系操作の3点
+2. ~~Entra ID リダイレクトURIの正式登録（ユーザー作業）~~ → **解消済み（ユーザー確認済み）**：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html` でのサインインが実際に成功したことをユーザーが確認済み。
+3. ~~ブラウザでの動作確認（ユーザー実施）~~ → **部分完了**：サインイン・候補一覧表示はブラウザで確認済み（2026-08-01）。PATCH系操作（個別確認結果記録・緊急停止・メモ・対応開始）は未確認。
+4. 重複表示の調査：ops-console.html の一覧に同氏名＋客先の組み合わせが複数行表示されているケースを確認。**DynamoDB実データ調査の結果、全件が異なる契約期間のレコードであり、バグではない（仕様通り）。** 調査完了。
 
-残る未完了事項は上記 2・3 のみ。いずれも完了した時点で「完了済みRound」へ移動する。
+残る確認事項：PATCH系操作の動作確認（ユーザー実施）のみ。完了した時点で「完了済みRound」へ移動する。
 
 ---
 
