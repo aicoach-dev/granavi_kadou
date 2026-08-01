@@ -81,6 +81,7 @@
     td { padding: 8px 11px; border-bottom: 1px solid #eee; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr.row-greyed td { opacity: .4; pointer-events: none; }
+    tr.row-greyed td.consent-cell { opacity: 1; pointer-events: auto; }
     tr.row-hl-bg     { background: #e8f4fd; }
     tr.row-hl-border { border-left: 4px solid #c0392b; }
     tr.row-hl-border td:first-child { padding-left: 8px; }
@@ -423,6 +424,7 @@ function buildRow(item) {
 
   /* ⑤ 個別確認 */
   const tdCon = document.createElement('td');
+  tdCon.className = 'consent-cell';
   if (SHOW_CONSENT_SEL.has(item.status)) {
     const wrap = document.createElement('div');
     const sel = document.createElement('select');
