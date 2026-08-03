@@ -133,6 +133,7 @@
     .icon-btn:hover { background: #f0f0f0; }
     .est-on  { color: #dc3545; }
     .est-off { color: #bbb; }
+    .est-label { font-size: 11px; font-weight: 600; margin-left: 2px; }
     .memo-on  { color: #0d6efd; }
     .memo-off { color: #bbb; }
     .empty-msg { margin: 24px 16px; color: #888; font-size: 13px; }
@@ -487,6 +488,12 @@ function buildRow(item) {
     estB.title     = item.emergencyStopped?.active
       ? '緊急停止中（クリックで解除）' : '緊急停止する';
     estB.textContent = '🚨';
+    if (item.emergencyStopped?.active) {
+      const lbl = document.createElement('span');
+      lbl.className = 'est-label';
+      lbl.textContent = '停止中';
+      estB.appendChild(lbl);
+    }
     estB.dataset.subjectId    = item.subjectId;
     estB.dataset.currentActive = item.emergencyStopped?.active ? '1' : '0';
     estB.addEventListener('click', onEmergencyClick);
