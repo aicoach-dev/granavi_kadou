@@ -17,6 +17,7 @@
 - 2026-07-31：change-instructions.md の反映方法を改訂。Codeによる直接編集を許可（ただし毎回`cat`生出力での全文照合を必須化）。
 - 2026-07-31：.claude/settings.json の許可リストにPowerShell形式47件を追加（Bash形式のみでは主シェルであるPowerShellに効いていなかったための是正）。合計94件。
 - 2026-07-31：claude.aiスレッドでRound 5（営業事務向け画面）の技術設計を確定・起票。CSV連携（team）をRound5に含める、送信ボタンはフロントのみ実装しRound6で本実装、緊急停止はトグル、担当者メモは単一フィールド、対応開始は個別確認結果編集時にリセット、の5点を決定。
+- 2026-08-01：Round 5完了（ops-console.html・参照系/書き込み系API・JWT認証）。MSAL.jsセルフホスティング化・外垣蓮acknowledgedAt復元（2026-08-01実施）・consent-cell CSSクラス追加・テストレコード削除を含む後処理まで完了。現在起票中のRoundなし。
 
 ---
 
@@ -52,97 +53,24 @@
 
 ## 現在のRound
 
-### Round 5：営業事務向け画面（ops-console.html）＋参照系API（起票：2026-07-31）
-
-要件書4.11・7.4を実装範囲とする。
-
-**スコープ**
-
-- 候補一覧の表示（ステータス導出含む）
-- 個別確認結果の記録（4値セレクトボックス）
-- 緊急停止機能（トグル）
-- 担当者メモ（単一フィールド）
-- 「対応開始」操作
-- チーム情報CSV連携（週次同期Lambda拡張）
-- 「選択した対象へ送信」ボタンは、チェックボックス選択・件数プレビュー・確認ダイアログまでをフロントエンドのみで実装する。確定操作後はバックエンドを呼び出さず、「送信機能はRound 6で実装予定」の旨を表示するにとどめる。実際のメール送信処理はRound 6のスコープであり、今回は実装しない。
-
-**APIエンドポイント（最終版、第三者レビュー反映済み・2026-08-01時点）**
-
-- `GET /api/candidates` — 候補一覧を返す。クエリパラメータ `?quarter=YYYYQN`（省略時は全件、DynamoDB Scan）。レスポンス: `{ quarter: string|null, items: Item[] }`。Itemのフィールド：`subjectId, quarter, name, company, team, contractType, periodStart, periodEnd, sentAt, responseType, respondedAt, opsConsentResult, opsMemo, acknowledgedAt, emergencyStopped, escalatedAt, status, consentSource, reachedSubtype, syncedAt, updatedAt`。ステータス（7種）はDBに保存された値ではなく、一次情報から都度導出される。ソート順は「四半期→名前」。**名前の並びはICU既定のHan照合順であり、五十音順ではない**（2026-08-01決定、フロントで独自の五十音ソートを行う場合は別途ふりがなデータが必要）。
-
-- `PATCH /api/candidates/{subjectId}/consent` — リクエストボディ: `{ "result": "consent" | "pending" | "no_renewal" | null }`（フィールド名は`result`、`consentResult`ではない）。レスポンス: `{ subjectId, opsConsentResult }`。値が実際に変化した場合のみ`acknowledgedAt`が自動リセットされる（同一値の再送信では保持される、2026-08-01修正）。
-
-- `PATCH /api/candidates/{subjectId}/emergency-stop` — **リクエストボディ必須**: `{ "active": boolean }`（2026-08-01変更、旧仕様のボディなしトグルから変更。フロント実装時は必ずこの新仕様を前提にすること）。`active`がboolean型でない場合は400。レスポンス: `{ subjectId, emergencyStopped: { active, by, at } }`。
-
-- `PATCH /api/candidates/{subjectId}/memo` — リクエストボディ: `{ "memo": string | null }`（nullでフィールド削除）。レスポンス: `{ subjectId, opsMemo }`。
-
-- `PATCH /api/candidates/{subjectId}/acknowledge` — リクエストボディ不要。レスポンス: `{ subjectId, acknowledgedAt: { at, by } }`。
-
-**DynamoDB 現在状態テーブルへの追加フィールド（想定・仮称）**
-
-| フィールド | 型（想定） | 備考 |
-|---|---|---|
-| `emergencyStopped` | `{ active: boolean, by: string, at: string }` | トグル。ON/OFFどちらも監査ログに記録 |
-| `opsMemo` | `string` | 単一フィールド上書き。監査ログで変更履歴を担保 |
-| `acknowledgedAt` | `{ at: string, by: string } \| null` | `consent`更新時に自動でnullリセットされる |
-| `team` | `string \| null` | CSV連携で埋める。未連携・未一致の場合はnull |
-
-**着手前に確認すること（実装前提の追記事項と対応）**
-
-1. 上記フィールド名・監査ログイベント種別が、既存の現在状態テーブル・監査ログテーブルの命名規則と衝突しないか。既存の一覧を報告した上で、必要なら名称を調整すること。
-2. チーム連携用CSVが実際にS3へ配置済みかどうか。
-3. `team`フィールドの週次上書き方針について：週次同期を実行するたびに全既存レコードへ上書きする（所属変更に追随できる）か、候補作成時のみ設定し以降は更新しないか、このスレッドではまだ決めていない。着手前にCodeから設計上の推奨案を報告してもらい、claude.aiスレッド側で確定する。
-
-**JWT Authorizer**
-
-- API Gatewayへの本組み込みを行う。値は本ファイル「実装前提」記載の通り（Issuer / Audience）。
-
-**フロントエンド（ops-console.html）**
-
-- Vanilla JS単一ファイル、既存モジュールと同様の構成方針。MSAL.js設定は「実装前提」記載のテナントID・クライアントID・スコープ（`access_as_user`）を使用。
-- 要件書7.4のテーブル列構成・ハイライトルール・グレーアウト条件（「本人承諾」のみ自動、他は「対応開始」まで維持）に従う。
-- 色だけに依存しない（アイコン・テキスト併用、要件書4.11）。
-- 複数選択＋「選択した対象へ送信」ボタン → 確認ダイアログ（件数プレビュー）→ 確定後は「送信機能はRound 6で実装予定」の表示のみ。バックエンド呼び出しはしない。
-
-**推奨コミット単位（目安、Codeの判断で調整可）**
-
-このRoundは規模が大きいため、以下の単位での分割を推奨する。1コミットに複数の変更を混在させない。
-
-0. ドキュメント更新（decisions-log.md・change-instructions.mdへの反映のみ）
-1. JWT Authorizer組み込み（インフラ）
-2. `GET /api/candidates`（ステータス導出関数を含む）
-3. `PATCH /consent`（`acknowledgedAt`リセットの副作用含む）
-4. `PATCH /emergency-stop`
-5. `PATCH /memo`
-6. `PATCH /acknowledge`
-7. 週次同期Lambdaへのteam CSV連携追加
-8. ops-console.htmlフロントエンド（一覧表示→操作系→送信ボタンのフロント動作、の順で複数コミットに分割してよい）
-
-**バックエンド（1〜7）が一通り完了し動作確認が取れた段階で一度報告してください。claude.aiスレッドでの確認に加え、影響範囲が広い変更のため、別スレッドでの第三者レビューを挟みます。両方の確認が完了してからフロントエンド（8）に進んでください。**
-
-不一致・未確認事項があれば、実装を進める前に報告してください。
-
-**実装進捗（2026-08-01時点）**
-
-推奨コミット単位0〜8は以下の通り実施済み（git logより確認）：
-- 0（ドキュメント）〜7（team CSV）：各単位に対応するコミットあり
-- 8（ops-console.html）：1コミットにまとめて実装（推奨の3分割は未実施）
-- その後 バグ修正（NO_RENEWALハイライト・保留ヘルプテキスト）、CORS是正（API_BASE空文字列化・allowOrigins絞り込み）を追加実施
-
-S3上の `ops-console.html` の ETag がローカルファイル（CORS是正後）のMD5と一致していることを確認した。
-
-**未完了事項（Round5完了の条件）**
-
-1. ~~MSAL.js CDN問題の修正~~ → **解消済み**：`alcdn.msauth.net` がバージョンを問わず 404 であることを確認。`@azure/msal-browser@3.20.0` の `lib/msal-browser.min.js`（300,171 bytes）を `frontend/vendor/msal-browser.min.js` としてコミットし、セルフホスティングへ移行。CloudFront 経由で HTTP 200 を確認済み。詳細は `decisions-log.md` 2026-08-01付「MSAL.js CDN廃止対応 — セルフホスティングへ変更（Round5）」エントリを参照。
-2. ~~Entra ID リダイレクトURIの正式登録（ユーザー作業）~~ → **解消済み（ユーザー確認済み）**：`https://d2ule3xvskr65i.cloudfront.net/ops-console.html` でのサインインが実際に成功したことをユーザーが確認済み。
-3. ~~ブラウザでの動作確認（ユーザー実施）~~ → **部分完了**：サインイン・候補一覧表示はブラウザで確認済み（2026-08-01）。PATCH系操作（個別確認結果記録・緊急停止・メモ・対応開始）は未確認。
-4. 重複表示の調査：ops-console.html の一覧に同氏名＋客先の組み合わせが複数行表示されているケースを確認。**DynamoDB実データ調査の結果、全件が異なる契約期間のレコードであり、バグではない（仕様通り）。** 調査完了。
-
-残る確認事項：PATCH系操作の動作確認（ユーザー実施）のみ。完了した時点で「完了済みRound」へ移動する。
+現在起票中のRoundはありません。Round 6（送信フロー・SES連携）は次回このスレッドで起票予定。
 
 ---
 
 ## 完了済みRound
+
+### Round 5：営業事務向け画面・書き込み系API（完了：2026-08-01）
+
+営業事務向け画面（`frontend/ops-console.html`）と参照系・書き込み系API（`GET /api/candidates`・`PATCH /consent`・`/emergency-stop`・`/memo`・`/acknowledge`）を実装した。MSAL.js（v3 セルフホスティング）・JWT Authorizer を含む認証フロー全体をブラウザで確認済み。
+
+- MSAL.js は `alcdn.msauth.net` CDN廃止を受け、npm パッケージからセルフホスティング（`frontend/vendor/msal-browser.min.js`、@azure/msal-browser@3.20.0）に移行
+- アクセストークン v2.0 化（`accessTokenAcceptedVersion=2` → JWT Authorizer Audience を GUID 形式 `d016064a-7092-43b9-966d-13af53f3d3b8` に修正）
+- API呼び出しを CloudFront 経由の同一オリジン通信（`API_BASE = ''`）に統一、CORS `allowOrigins` を CloudFront ドメインに絞り込み済み
+- ステータス導出ロジック（`status.ts`）に2件の修正：①未送信のまま契約開始日到達も `PERIOD_REACHED` に含める、②`WANTS_CONSULT` を `PERIOD_REACHED` より低優先度に変更（いずれも第三者レビューで発見）
+- PERIOD_REACHED 行でも個別確認結果セレクトのみ操作可能にする CSS クラス追加（`td.consent-cell { opacity: 1; pointer-events: auto; }`）
+- 第三者レビュー指摘（緊急停止API冪等化・チームCSVヘッダー不正検知・ソートコメント修正）を反映
+- 書き込み系PATCH動作確認は合成テストレコード（2件）で実施・削除済み。実在レコードへの影響ゼロを監査ログで確認済み
+- 外垣 蓮 の `acknowledgedAt` を null に復元（2026-08-01、対応開始ボタンの誤操作の後処理）
 
 ### Round 4：週次同期・候補抽出ロジック（完了：2026-07-28）
 
@@ -222,6 +150,8 @@ Claude Codeが「実装前提のファイル存在チェック」等、読み取
 
 - **AWSアカウント構成**：当面は既存アカウント内に構築し、後日AWS Organizationsへの移行を検討する（要件定義時点の暫定方針。再検討の余地あり）。
 - **送信者表示名のデフォルト**：汎用アシスタント名で確定したが、運用開始後の開封率・返信率のデータを見て見直す余地がある。
+- **緊急停止アイコンのON/OFF視覚的区別**：`🚨` 絵文字に CSS `color` 指定をしているが、絵文字には `color` が効かないためON/OFFが視覚的に区別できない。SVGアイコンへの置き換えまたはテキストラベル追加（「停止中」等）が必要（詳細は decisions-log.md 2026-08-01 エントリ参照）。
+- **契約期間の表示形式**：ops-console.html 一覧の期間列で「6/21-9:20」のような意図しない表記が出ることを確認。月/日の区切り文字の扱いを修正する必要がある。
 - **四半期モニタリングの自動化**：「無反応のまま契約開始日到達」の集計を、将来的にclaude.aiプロジェクトの定期タスク機能で自動化できないか検討する（システム側に参照手段ができてから）。
 - **グローバル一時停止スイッチ**：個別の緊急停止とは別に、全体の自動送信を一括で止められる仕組み。要件外の任意提案、実装コスト次第で検討。
 - **SES本番送信申請・DNS（SPF/DKIM/DMARC）設定**：Round 6着手前に、社内でDNS設定を行う担当者との調整を早めに始めておくとよい（コーディング外の待ち時間が発生しうるため）。
