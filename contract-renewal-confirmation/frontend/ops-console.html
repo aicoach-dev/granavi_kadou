@@ -106,6 +106,7 @@
     .name-cell { white-space: normal; min-width: 90px; }
     .name-main { font-weight: 600; }
     .name-team { font-size: 11px; color: #888; }
+    .company-period { font-size: 11px; color: #888; }
     .consent-sel {
       padding: 3px 6px;
       border: 1px solid #ccc;
@@ -302,6 +303,12 @@ function hideErr()     { $err.classList.add('hidden'); }
 function setLoad(msg)  { $loading.textContent = msg; $loading.classList.remove('hidden'); }
 function hideLoad()    { $loading.classList.add('hidden'); }
 
+function fmtPeriod(start, end) {
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [, em, ed]   = end.split('-').map(Number);
+  return sy + '/' + sm + '/' + sd + '〜' + em + '/' + ed;
+}
+
 function fmtDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -406,7 +413,17 @@ function buildRow(item) {
   tdN.appendChild(nd); tr.appendChild(tdN);
 
   /* ③ 客先 */
-  const tdC = document.createElement('td'); tdC.textContent = item.company; tr.appendChild(tdC);
+  const tdC = document.createElement('td');
+  const nd2 = document.createElement('div');
+  const cn  = document.createElement('div'); cn.textContent = item.company;
+  nd2.appendChild(cn);
+  if (item.periodStart && item.periodEnd) {
+    const cp = document.createElement('div'); cp.className = 'company-period';
+    cp.textContent = fmtPeriod(item.periodStart, item.periodEnd);
+    nd2.appendChild(cp);
+  }
+  tdC.appendChild(nd2);
+  tr.appendChild(tdC);
 
   /* ④ ステータス */
   const tdS = document.createElement('td');
@@ -661,6 +678,7 @@ async function fetchAll() {
   try {
     const data = await loadCandidates(curQuarter);
     allItems = data.items;
+    allItems.sort((a, b) => (a.periodStart ?? '').localeCompare(b.periodStart ?? ''));
     if (!curQuarter) updateQOptions(allItems);
     renderTable(allItems);
   } catch (err) {
