@@ -158,6 +158,34 @@ export class ContractRenewalStack extends cdk.Stack {
             ],
             resources: ['*'],
           }),
+          // CDK BucketDeployment カスタムリソース Lambda のログ記録
+          // 関数名は CDK が自動生成（ContractRenewalStack-CustomCDKBucketDeployment8693-* 形式）
+          // 明示的に命名した Lambda（contract-renewal-*）は AllowCloudWatchLogs で対応済み
+          new iam.PolicyStatement({
+            sid: 'AllowCDKBucketDeploymentLogs',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'logs:CreateLogGroup',
+              'logs:CreateLogStream',
+              'logs:PutLogEvents',
+            ],
+            resources: [
+              `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/ContractRenewalStack-*`,
+              `arn:aws:logs:${region}:${accountId}:log-group:/aws/lambda/ContractRenewalStack-*:*`,
+            ],
+          }),
+          // CDK bootstrap bucket: BucketDeployment Lambda が frontend assets zip をダウンロードするために必要
+          // このバケットはアカウント内の全 CDK スタックで共有されるため、他プロジェクトアセットへの読み取りも
+          // PermissionsBoundary 上は許可されることを認識済み（identity policy は特定ハッシュのみ参照）
+          new iam.PolicyStatement({
+            sid: 'AllowCDKAssetsBucketRead',
+            effect: iam.Effect.ALLOW,
+            actions: ['s3:GetBucket*', 's3:GetObject*', 's3:List*'],
+            resources: [
+              'arn:aws:s3:::cdk-hnb659fds-assets-698212246219-ap-northeast-1',
+              'arn:aws:s3:::cdk-hnb659fds-assets-698212246219-ap-northeast-1/*',
+            ],
+          }),
         ],
       },
     );
@@ -695,7 +723,7 @@ export class ContractRenewalStack extends cdk.Stack {
       new iam.PolicyStatement({
         sid: 'AllowCloudFrontInvalidation',
         effect: iam.Effect.ALLOW,
-        actions: ['cloudfront:CreateInvalidation'],
+        actions: ['cloudfront:CreateInvalidation', 'cloudfront:GetInvalidation'],
         resources: [`arn:aws:cloudfront::${accountId}:distribution/${distribution.distributionId}`],
       })
     );
