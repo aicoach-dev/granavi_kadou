@@ -547,3 +547,42 @@ CLAUDE.mdの検証・報告の原則①(「上記に提示しました」等、�
 - 実装コストは小(変更箇所3点、見積もり1〜2時間)。
 
 なお、この変更はDynamoDBスキーマ・認証境界には影響しないため、Round5で確立した第三者レビュー実施基準には該当せず、レビューは実施しない。ただし、IAM Permissions Boundaryを変更する点を踏まえ、Round3と同様に`aws iam simulate-custom-policy`による実機検証を実装後に行う。
+
+## 2026-08-04 CDK bootstrapバケット共有によるアクセス範囲拡大を、残存リスクとして受け入れてデプロイを進める。IAM Boundary変更時の確認手順を追加で確立する
+
+**CDK bootstrapバケット共有について**
+
+Phase 1b実装過程で、`AllowCDKAssetsBucketRead`(BucketDeployment Lambdaがフロントエンドアセットのzipを取得するために必要な権限)の追加が、このアカウント・リージョン内の全CDKスタックが共有するbootstrapバケット(`cdk-hnb659fds-assets-698212246219-ap-northeast-1`)全体への読み取りを許可することになる点が判明した。実際にバケットの中身を確認したところ、2024年時点の日付を持つAppSync(VTL/GraphQL)関連ファイルが確認され、本プロジェクト以外のCDKスタック由来のビルド成果物(CloudFormationテンプレート・Lambdaコードのzip)が同居していることを確認した。
+
+調査の結果、この広い読み取り要求はBoundary側の設定で新たに作り出したものではなく、CDKの`BucketDeployment`コンストラクトが生成するLambdaのidentity policy自体が、当初からbootstrapバケット全体への`GetBucket*`/`GetObject*`/`List*`を要求する標準構成であることが、最初の技術設計提案時のcdk diff(IAM Statement Changesテーブル)で既に確認できていた。
+
+**リスクの評価**:この権限は、他プロジェクトの実行時データ(業務系・人材評価系の稼働中データ)ではなく、ビルド成果物(CFNテンプレート・Lambdaコード)への読み取りに限定される。かつ、この権限を持つのはContractRenewalStack専用のデプロイ時カスタムリソースLambdaのロールのみであり、実際に稼働するのは`cdk deploy`実行時のみである。
+
+**判断**:要件書5章に既にある「アカウントルート認証情報・CloudTrail等のアカウント単位のログ・検知機構は既存リソースと共有される」という既存の残存リスク受容パターンと同種のものとして、今回のCDK bootstrapバケット共有についても残存リスクとして受け入れ、`AllowCDKAssetsBucketRead`を追加した状態でデプロイを進めることとした。より厳密な分離(このプロジェクト専用のCDK bootstrap qualifierを新設し、bootstrapバケット自体を分離する)は、実装コストが高く今回は見送り、将来のための申し送り（バックログ）に追加する。
+
+**IAM Boundary変更時の確認手順について**
+
+今回のフロントエンドデプロイのIaC化作業では、IAM Permissions Boundaryの変更に起因する想定外の事態が、少なくとも4回連続で発生した(①Eventual Consistencyという誤った原因診断、②実際の原因であるCDK assetsバケットへのアクセス不足、③その修正提案におけるdistribution IDの不要なハードコード化提案、④今回のbootstrapバケット共有リスク)。
+
+このうち②・④は、いずれも**最初のcdk diffのIAM Statement Changesテーブルに、当初から表示されていた内容**だった。当初は一部の行(FrontendBucket・CloudFront関連)のみを深掘りし、CDK assetsバケットの行を見落としたまま「Boundaryの2つの要注意点は据え置き」という判断をしてしまっていた。
+
+**今後の手順として確立する**:IAM Permissions Boundaryに変更を加える際、`cdk diff`のIAM Statement Changesテーブルが出力された場合は、表示されているすべての行を漏れなくBoundaryの現在の許可内容と突き合わせ、新たに許可が必要になる行がないかを機械的に確認する。一部の行のみを深掘りして残りを見送る、という進め方はしない。なお、CDK bootstrap qualifierの専用化・`.gitattributes`によるCRLF/LF問題の解決の2点は、将来のための申し送り（バックログ）としてchange-instructions.mdに追加した。
+
+## 2026-08-04 フロントエンドデプロイのIaC化(BucketDeployment)が完了。トラブルシューティングの経緯と確立した手順を記録する
+
+技術設計承認(2026-08-03)から数えてPhase 1・1b・1c・2の4段階のデプロイを経て、frontend/配下のS3デプロイをCDKのBucketDeploymentによるIaC経由に移行する作業が完了した。
+
+**経緯**：
+- 調査の過程で、S3上にのみ存在しgit管理外だった`index.html`を発見し、事前に`frontend/index.html`としてgit管理下に追加した(prune設定による意図しない削除を防止)。
+- Phase 1（初回のcdk deploy）はロールバックした。当初「IAM Eventual Consistency（境界更新からLambda実行までの時間が短すぎた）」と誤診断したが、実際にはCloudFormationイベントのRequestIdを突き合わせた結果、原因はBucketDeployment LambdaがCDK bootstrapバケットへの読み取り権限を持っていなかったことだった。誤った診断は、証拠（RequestId）に基づき自ら訂正した。
+- CDK bootstrapバケット（`cdk-hnb659fds-assets-698212246219-ap-northeast-1`）は、アカウント内の全CDKスタックが共有するバケットであり、`AllowCDKAssetsBucketRead`の追加により、他プロジェクト（本プロジェクト以外のCDKスタック）のビルド成果物（CFNテンプレート・Lambdaコード）への読み取りも許可されることが判明した。この点は2026-08-04の別エントリで検討済みで、要件書5章の既存の残存リスク受容パターン（アカウント単位のログ・検知機構の共有）と同種のものとして、残存リスクとして受け入れることを決定済み。
+- この過程で、「IAM Permissions Boundaryに変更を加える際は、cdk diffのIAM Statement Changesテーブルの全行を機械的に突き合わせる」という確認手順を確立した（2026-08-04の別エントリで記録済み）。この手順を実際にPhase 2実行前に適用した結果、`cloudfront:GetInvalidation`がBoundaryに不足していることを、実際にエラーを起こす前に検知できた。技術設計提案時点では「fire-and-forget方式のため呼び出さない」と判断していたが、これも実機検証により誤りと判明し、訂正した。
+- Phase 1〜1cの3回のBoundary修正（ログ許可・assetsバケット読み取り・GetInvalidation追加）が、実際にはAWS環境へデプロイ済みであるにもかかわらず、一度もコミットされていない状態が生じていることに気づき、Phase 2実行前にコミット（`a917d8c`）として記録した。これにより、デプロイされているインフラの実態とgit履歴が一致した状態を回復した。
+
+**最終結果**：
+- Phase 2（BucketDeployment有効化）は成功し、ロールバックなしで`CREATE_COMPLETE`に到達した。
+- CloudFrontキャッシュ無効化（Invalidation ID: `I9FE9WRIDF22C6GBXP01XV8M0Q`）が自動実行され、`Completed`を確認した。
+- ローカルのMD5・S3のETag・CloudFrontのETagの3者が一致することを確認し、`d897b15`時点（契約期間の客先列統合・デフォルトソート順変更・緊急停止アイコンのラベル追加を含む）の`ops-console.html`が本番環境に正しく反映されていることを確認した。
+- 今後のフロントエンド変更は、このBucketDeploymentの仕組みにより、`cdk deploy`一つでS3同期・CloudFrontキャッシュ無効化まで自動化される。CLAUDE.md絶対ルール2（AWS CLIコマンドを直書きしない）への今後の違反リスクも、この仕組みにより構造的に低減された。
+
+**教訓（今後への申し送り）**：IAM Permissions Boundaryが関わる変更は、このプロジェクトにおいて最も摩擦の大きい変更カテゴリであることが今回のトラブルシューティングで繰り返し示された。次回以降、IAM Boundaryに変更を加える設計提案の時点から、影響を受けるすべてのIAM Statement Changesの行を機械的に洗い出す（今回のように後から1行ずつ発覚させるのではなく）運用を最初から徹底する。
