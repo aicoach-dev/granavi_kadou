@@ -3,6 +3,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -69,6 +70,7 @@ export class ContractRenewalStack extends cdk.Stack {
               's3:DeleteObject',
               's3:ListBucket',
               's3:GetBucketLocation',
+              's3:GetBucketVersioning',
             ],
             resources: [
               `arn:aws:s3:::contract-renewal-*`,
@@ -687,8 +689,32 @@ export class ContractRenewalStack extends cdk.Stack {
       ],
     });
 
+    // BucketDeploymentによるCloudFrontキャッシュ無効化を許可
+    // distributionが確定した後でaddStatementsを呼ぶことで、ARNにdistributionIdを埋め込める
+    permissionsBoundary.addStatements(
+      new iam.PolicyStatement({
+        sid: 'AllowCloudFrontInvalidation',
+        effect: iam.Effect.ALLOW,
+        actions: ['cloudfront:CreateInvalidation'],
+        resources: [`arn:aws:cloudfront::${accountId}:distribution/${distribution.distributionId}`],
+      })
+    );
+
     // =========================================================
-    // 13. スタック出力
+    // 13. フロントエンドアセットのS3デプロイ（IaC化）
+    //     cdk deploy で frontend/ 配下を S3 へ同期し、
+    //     CloudFront キャッシュを自動無効化する。
+    // =========================================================
+    new s3deploy.BucketDeployment(this, 'FrontendDeployment', {
+      sources: [s3deploy.Source.asset(path.join(__dirname, '../../frontend'))],
+      destinationBucket: frontendBucket,
+      distribution: distribution,
+      distributionPaths: ['/*'],
+      prune: true,
+    });
+
+    // =========================================================
+    // 14. スタック出力
     // =========================================================
     new cdk.CfnOutput(this, 'CloudFrontURL', {
       value: `https://${distribution.distributionDomainName}`,
