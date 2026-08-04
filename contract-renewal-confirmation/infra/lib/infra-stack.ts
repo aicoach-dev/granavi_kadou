@@ -458,16 +458,15 @@ export class ContractRenewalStack extends cdk.Stack {
     });
 
     // =========================================================
-    // 9. EventBridge: 週次実行スケジュール
-    //    毎週月曜 07:00 JST (= 日曜 22:00 UTC) に Lambda を起動
+    // 9. EventBridge: 日次実行スケジュール
+    //    毎日 07:00 JST (= 22:00 UTC) に Lambda を起動
     // =========================================================
     new events.Rule(this, 'WeeklySyncRule', {
-      ruleName: 'contract-renewal-weekly-sync',
-      description: '週次同期Lambda トリガー（月曜 07:00 JST）',
+      ruleName: 'contract-renewal-daily-sync',
+      description: '日次同期Lambda トリガー（毎日 07:00 JST）',
       schedule: events.Schedule.cron({
         minute: '0',
         hour: '22',
-        weekDay: 'SUN',
         month: '*',
         year: '*',
       }),
@@ -482,7 +481,7 @@ export class ContractRenewalStack extends cdk.Stack {
     // =========================================================
     const syncErrorAlarm = new cloudwatch.Alarm(this, 'SyncErrorAlarm', {
       alarmName: 'contract-renewal-sync-errors',
-      alarmDescription: '週次同期Lambda エラー検知（1件以上でアラート）',
+      alarmDescription: '日次同期Lambda エラー検知（1件以上でアラート）',
       metric: syncLambda.metricErrors({
         period: cdk.Duration.minutes(5),
         statistic: 'Sum',
