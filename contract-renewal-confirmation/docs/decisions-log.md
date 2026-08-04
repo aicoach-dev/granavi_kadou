@@ -586,3 +586,17 @@ Phase 1b実装過程で、`AllowCDKAssetsBucketRead`(BucketDeployment Lambdaが�
 - 今後のフロントエンド変更は、このBucketDeploymentの仕組みにより、`cdk deploy`一つでS3同期・CloudFrontキャッシュ無効化まで自動化される。CLAUDE.md絶対ルール2（AWS CLIコマンドを直書きしない）への今後の違反リスクも、この仕組みにより構造的に低減された。
 
 **教訓（今後への申し送り）**：IAM Permissions Boundaryが関わる変更は、このプロジェクトにおいて最も摩擦の大きい変更カテゴリであることが今回のトラブルシューティングで繰り返し示された。次回以降、IAM Boundaryに変更を加える設計提案の時点から、影響を受けるすべてのIAM Statement Changesの行を機械的に洗い出す（今回のように後から1行ずつ発覚させるのではなく）運用を最初から徹底する。
+
+## 2026-08-04 週次同期を日次同期に変更した(EventBridge Scheduler)
+
+イレギュラーなタイミング(中途採用・契約途中終了後の新規契約締結等)でのExcel追記が月に数回程度発生するという実態を踏まえ、営業事務が新規追加した行が正しく取り込まれたかを、より短いサイクルで確認できるようにするため、週次同期を日次同期に変更した。
+
+対応：
+- EventBridge Ruleの`ruleName`を`contract-renewal-weekly-sync`から`contract-renewal-daily-sync`に変更（`ruleName`変更に伴うCloudFormationでのリソース置換を伴う。replace-before-delete順序で実行され、Lambdaが呼び出せない空白期間は生じないことを確認済み）。
+- cron式を`cron(0 22 ? * SUN *)`（毎週日曜22:00 UTC=毎週月曜07:00 JST）から`cron(0 22 * * ? *)`（毎日22:00 UTC=毎日07:00 JST）に変更。実行時刻(07:00 JST)は維持。
+- CloudWatch Alarm（`contract-renewal-sync-errors`）の評価期間（5分・閾値1件）は週次実行を前提にした設定ではなく、日次実行でもそのまま流用可能なことを確認済み。alarmDescriptionの文言のみ「週次」→「日次」に更新した。
+- IAM Permissions Boundaryへの影響なし（cdk diffでIAM Statement Changesが出現しないことを確認済み）。
+
+なお、CDKのconstruct ID（`'WeeklySyncRule'`）はコード上そのまま残っている。実際にAWS上で使われる名前（`ruleName`）は正しく`daily-sync`に変更済みだが、construct ID自体を変更するとさらなるリソース置換を伴うため、今回は見送った。将来、このリソースに別の変更を加える機会があれば、あわせて`'DailySyncRule'`へリネームすることを検討する。
+
+理由：候補作成自体は要件書4.2の「1.5ヶ月前を基準日」というロジックにより制御されているため、同期頻度を上げても候補の表示タイミング自体が早まるわけではない。ただし、既に基準日を過ぎている（＝候補としてops-console.htmlに表示されうる）案件については、反映までの遅延が最大6日から最大1日に短縮される。既存の「手動での即時反映ボタン」案（実装コスト：新規API経路・非同期処理・権限設計・監査ログ拡張を要する中規模機能）と比較し、cron式の変更のみで完結する本対応の方がコスト対効果に優れると判断した。
